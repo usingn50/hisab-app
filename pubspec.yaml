@@ -1,0 +1,78 @@
+name: hisab
+description: تطبيق حساب — نظام المحاسبة الذكي للمشاريع الصغيرة في اليمن
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # إدارة الحالة
+  flutter_riverpod: ^2.4.0
+  riverpod_annotation: ^2.3.0
+
+  # قاعدة البيانات المحلية (SQLite)
+  drift: ^2.14.0
+  sqlite3_flutter_libs: ^0.5.0
+  
+  path_provider: ^2.1.0
+  path: ^1.8.0
+
+  # الـ Backend والـ API
+  dio: ^5.3.0
+
+  # التوجيه بين الشاشات
+  go_router: ^12.0.0
+
+  # الرسوم البيانية
+  fl_chart: ^0.65.0
+
+  # مسح الباركود
+  mobile_scanner: ^3.5.0
+
+  # تصدير PDF
+  pdf: ^3.10.0
+  printing: ^5.11.0
+
+  # إشعارات محلية للتذكيرات
+  flutter_local_notifications: ^16.0.0
+
+  # تنسيق التواريخ والأرقام
+  intl: ^0.20.2
+
+  # حفظ الإعدادات البسيطة
+  shared_preferences: ^2.2.0
+
+  # فتح واتساب لإرسال التذكيرات
+  url_launcher: ^6.2.0
+
+  # أيقونات
+  flutter_svg: ^2.0.0
+  iconsax: ^0.0.8
+
+  # اتصال الإنترنت
+  connectivity_plus: ^5.0.0
+
+  # توليد معرّفات فريدة للسجلات
+  uuid: ^4.2.0
+  
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  drift_dev: ^2.14.0
+  build_runner: ^2.4.0
+  riverpod_generator: ^2.3.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
+  
