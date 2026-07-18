@@ -4,9 +4,9 @@ class AppColors {
   AppColors._();
 
   // الألوان الأساسية
-  static const Color primary = Color(0xFF22C55E);        // أخضر
-  static const Color primaryDark = Color(0xFF15803D);
-  static const Color primaryLight = Color(0xFF86EFAC);
+  static const Color primary = Color(0xFF0A2351);        // أزرق ملكي
+  static const Color primaryDark = Color(0xFF051126);
+  static const Color primaryLight = Color(0xFF1E3A8A);
 
   // الذهبي للمميزات
   static const Color gold = Color(0xFFEAB308);

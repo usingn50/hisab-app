@@ -125,8 +125,8 @@ class _TodaySummary extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: report.isProfitable
-                  ? [AppColors.primaryDark, AppColors.primary]
-                  : [AppColors.danger.withValues(alpha: 0.7), AppColors.danger],
+                  ? [const Color(0xFF15803D), const Color(0xFF22C55E)] // Green gradient
+                  : [const Color(0xFFB91C1C), const Color(0xFFEF4444)], // Red gradient
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
             ),
@@ -310,7 +310,7 @@ class _WeekChart extends StatelessWidget {
               barRods: [
                 BarChartRodData(
                   toY: r.profit.abs(),
-                  color: r.isProfitable ? AppColors.primary : AppColors.danger,
+                  color: r.isProfitable ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
                   width: 16,
                   borderRadius: BorderRadius.circular(4),
                 ),

@@ -215,10 +215,11 @@ class _ScoreGauge extends StatelessWidget {
   const _ScoreGauge({required this.score});
 
   Color get _color {
-    if (score >= 80) return AppColors.success;
-    if (score >= 60) return AppColors.primaryLight;
-    if (score >= 40) return AppColors.gold;
-    return AppColors.danger;
+    if (score >= 80) return const Color(0xFF22C55E); // Green (Excellent)
+    if (score >= 60) return const Color(0xFF84CC16); // Light Green (Good)
+    if (score >= 40) return const Color(0xFFEAB308); // Gold (Fair)
+    if (score >= 20) return const Color(0xFFF97316); // Orange (Poor)
+    return const Color(0xFFEF4444); // Red (Critical)
   }
 
   @override
