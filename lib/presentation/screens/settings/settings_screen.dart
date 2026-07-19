@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/services/credit_share_service.dart';
 import '../../../core/services/session_service.dart';
 import '../../providers/injection.dart';
 
@@ -132,6 +133,7 @@ class SettingsScreen extends ConsumerWidget {
     // بيانات المعاملات/المنتجات/الزبائن تبقى محفوظة بقاعدة البيانات المحلية،
     // فقط "الدخول" ينتهي، والدخول بنفس الرقم لاحقاً يرجّع نفس البيانات.
     await SessionService.clearSession();
+    await CreditShareService.clearToken();
     ref.read(currentUserIdProvider.notifier).state = null;
 
     if (!context.mounted) return;
