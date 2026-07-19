@@ -156,8 +156,8 @@ class _TodaySummary extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: report.isProfitable
-                  ? [AppColors.primaryDark, AppColors.primary]
-                  : [AppColors.danger.withValues(alpha: 0.7), AppColors.danger],
+                  ? [AppColors.success, AppColors.successLight]
+                  : [AppColors.danger, const Color(0xFFB91C1C)],
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
             ),
