@@ -2,13 +2,12 @@
 
 Current task: none (idle — awaiting next task selection)
 Progress: 100% (last task complete)
-Last completed task: Logout flow (settings_screen.dart, session clear, /settings route)
-Next task: Backend OTP integration (login_screen.dart, otp_screen.dart, data/remote/api_client.dart)
+Last completed task: Backend OTP integration (AuthRepository + sealed results + dev/prod toggle)
+Next task: Credit score share_token generation + share screen (credit_screen.dart:161)
 Files expected to be modified next:
-- lib/data/remote/api_client.dart
-- lib/presentation/screens/auth/login_screen.dart
-- lib/presentation/screens/auth/otp_screen.dart
-- lib/core/services/session_service.dart (possibly, if backend issues its own userId)
+- lib/presentation/screens/credit/credit_screen.dart
+- lib/data/remote/api_client.dart (generateShareLink already exists)
+- lib/presentation/providers/injection.dart (add shareTokenProvider)
 
 SafeToContinue: true
 
@@ -20,6 +19,10 @@ SafeToContinue: true
   opaque string, not a UUID format, until backend OTP task lands.
 - Logout clears SharedPreferences session only — local drift DB data is
   intentionally preserved (same phone number restores same data).
+- AuthRepository._backendEnabled = false (dev mode). Set to true only
+  after backend Node.js is deployed and ApiClient.baseUrl is updated.
+- Dev OTP = 123456 — shown to user in otp_screen.dart dev banner.
+  Remove banner when _backendEnabled = true.
 
 ## Environment note
 No Flutter/Dart SDK available in the AI sandbox (no pub.dev access). All

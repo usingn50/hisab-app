@@ -7,6 +7,7 @@ import '../../data/local/daos/product_dao.dart';
 import '../../data/local/daos/customer_dao.dart';
 import '../../data/remote/api_client.dart';
 import '../../data/remote/sync_service.dart';
+import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/transaction_repository_impl.dart';
 import '../../data/repositories/product_repository_impl.dart';
 import '../../data/repositories/customer_repository_impl.dart';
@@ -55,6 +56,10 @@ final customerDaoProvider = Provider<CustomerDao>((ref) {
 // ===== الشبكة =====
 final apiClientProvider = Provider<ApiClient>((ref) {
   return ApiClient();
+});
+
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  return AuthRepository(ref.watch(apiClientProvider));
 });
 
 final connectivityProvider = Provider<Connectivity>((ref) {

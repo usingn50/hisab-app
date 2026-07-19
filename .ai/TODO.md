@@ -6,7 +6,7 @@
 - [x] PDF export (reports_screen.dart)
 - [x] Session Management (SessionService + currentUserIdProvider)
 - [x] Logout flow (settings_screen.dart)
-- [ ] Backend OTP integration (real send/verify, currently simulated)
+- [x] Backend OTP integration (AuthRepository + sealed results + dev/prod toggle via _backendEnabled)
 - [ ] Credit score share_token generation + share screen (credit_screen.dart:161)
 - [ ] Barcode scanner activation (mobile_scanner is in pubspec, unused — add_product_screen.dart:46)
 - [ ] App icon asset generation (png/adaptive icon files; color direction decided: gold/blue, simplified mark, no text)

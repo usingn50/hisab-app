@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/validators.dart';
+import '../../../data/repositories/auth_repository.dart';
+import '../../providers/injection.dart';
 import '../../widgets/common/app_button.dart';
 
 /// شاشة تسجيل الدخول — اعتماد رقم الهاتف اليمني فقط، بدون كلمات مرور.
 /// هذا يقلل الاحتكاك لمستخدمين غير معتادين على التطبيقات.
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
+class _LoginScreenState extends ConsumerState<LoginScreen>
     with SingleTickerProviderStateMixin {
   final _phoneController = TextEditingController();
   final _phoneFocus = FocusNode();
@@ -72,15 +75,24 @@ class _LoginScreenState extends State<LoginScreen>
 
     setState(() => _isLoading = true);
 
-    // TODO: استدعاء AuthRepository.sendOtp(phone) عبر sync_service / api_client
-    // حالياً: محاكاة تأخير الشبكة قبل ربط الـ Backend الفعلي
-    await Future.delayed(const Duration(milliseconds: 700));
+    final phone = '+967${_phoneController.text}';
+    final result = await ref.read(authRepositoryProvider).sendOtp(phone);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
-    final fullPhone = '+967${_phoneController.text}';
-    context.push('/otp', extra: fullPhone);
+    switch (result) {
+      case SendOtpSuccess():
+        context.push('/otp', extra: phone);
+      case SendOtpFailure(:final message):
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: AppColors.danger,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    }
   }
 
   @override
