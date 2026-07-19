@@ -15,6 +15,16 @@
 
 ---
 
+> **🤖 AI Agents / Automated Tools:** Before making ANY change to this
+> repository, read `.ai/STATE.md`, `.ai/TODO.md`, and `.ai/CHANGELOG.md`
+> first. They contain the current task, architectural decisions already
+> made, and what NOT to change. Do not re-analyze the whole repo from
+> scratch, and do not start unrelated work in parallel with another
+> session — check `.ai/STATE.md` → `SafeToContinue` and `Current task`
+> before committing.
+
+---
+
 ## 📱 لقطات الشاشة
 
 | لوحة التحكم | دفتر الديون | التقارير | السجل الائتماني |

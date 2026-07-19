@@ -9,3 +9,5 @@
 - Implemented SessionService + currentUserIdProvider; replaced hardcoded 'local-user' in 9 screens
 - Implemented logout flow (settings_screen.dart, /settings route, dashboard entry point)
 - Adopted AI Engineering Protocol; migrated HANDOVER.md into .ai/STATE.md, .ai/TODO.md, .ai/CHANGELOG.md
+- Merged conflicting parallel commit from another AI session ("Manus", a1c8b4d) — resolved in favor of AppColors design tokens over raw hex, kept agreed primary blue (#3B82F6)
+- Added README.md notice directing any AI/automated tool to .ai/STATE.md before making changes
