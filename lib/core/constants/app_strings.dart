@@ -86,4 +86,14 @@ class AppStrings {
   static const String confirm = 'تأكيد';
   static const String deleteConfirm = 'هل أنت متأكد من الحذف؟';
   static const String offlineMode = 'وضع بدون إنترنت — سيتم المزامنة لاحقاً';
+
+  // الإعدادات وتسجيل الخروج
+  static const String settings = 'الإعدادات';
+  static const String account = 'الحساب';
+  static const String logout = 'تسجيل الخروج';
+  static const String logoutConfirmTitle = 'تسجيل الخروج';
+  static const String logoutConfirmMessage =
+      'هل أنت متأكد من تسجيل الخروج؟ بياناتك تبقى محفوظة على جهازك.';
+  static const String cancel = 'إلغاء';
+  static const String appVersion = 'إصدار التطبيق';
 }

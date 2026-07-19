@@ -8,9 +8,6 @@ import '../../../core/utils/validators.dart';
 import '../../providers/injection.dart';
 import '../../widgets/common/app_button.dart';
 
-// TODO: استبدال هذا بمعرّف المستخدم الفعلي من جلسة تسجيل الدخول
-const _currentUserId = 'local-user';
-
 /// فئات المصاريف الشائعة لدى أصحاب المحلات اليمنية — تسريع الإدخال.
 const _expenseCategories = [
   'كهرباء / مولد',
@@ -53,7 +50,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
     final notifier = ref.read(transactionFormNotifierProvider.notifier);
     await notifier.submitExpense(
-      userId: _currentUserId,
+      userId: ref.read(currentUserIdProvider) ?? 'local-user',
       amount: double.parse(_amountController.text),
       notes: notes.isEmpty ? null : notes,
     );

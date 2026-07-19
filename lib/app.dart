@@ -15,6 +15,7 @@ import 'presentation/screens/customers/customers_screen.dart';
 import 'presentation/screens/customers/add_customer_screen.dart';
 import 'presentation/screens/reports/reports_screen.dart';
 import 'presentation/screens/credit/credit_screen.dart';
+import 'presentation/screens/settings/settings_screen.dart';
 
 class HisabApp extends StatelessWidget {
   const HisabApp({super.key});
@@ -100,6 +101,10 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/credit',
       builder: (context, state) => const CreditScreen(),
+    ),
+    GoRoute(
+      path: '/settings',
+      builder: (context, state) => const SettingsScreen(),
     ),
   ],
 );

@@ -38,7 +38,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
 
     final customer = Customer(
       id: const Uuid().v4(),
-      userId: 'local-user', // TODO: من جلسة المستخدم الفعلية
+      userId: ref.read(currentUserIdProvider) ?? 'local-user',
       name: _nameController.text.trim(),
       phone: _phoneController.text.isEmpty
           ? null

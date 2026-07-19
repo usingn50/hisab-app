@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/services/session_service.dart';
 
 /// شاشة البداية — تتحقق من وجود جلسة دخول سابقة
 /// وتوجّه المستخدم تلقائياً للوحة التحكم أو شاشة الدخول.
@@ -24,13 +24,12 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _checkSession() async {
     // فترة قصيرة لعرض الشعار وتهيئة قاعدة البيانات المحلية
-    final prefs = await SharedPreferences.getInstance();
-    final phone = prefs.getString('user_phone');
+    final userId = await SessionService.getUserId();
 
     await Future.delayed(const Duration(milliseconds: 900));
     if (!mounted) return;
 
-    if (phone != null && phone.isNotEmpty) {
+    if (userId != null && userId.isNotEmpty) {
       context.go('/dashboard');
     } else {
       context.go('/login');

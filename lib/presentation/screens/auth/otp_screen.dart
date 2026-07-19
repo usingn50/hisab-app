@@ -1,23 +1,25 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/services/session_service.dart';
+import '../../providers/injection.dart';
 import '../../widgets/common/app_button.dart';
 
 /// شاشة التحقق من رمز OTP المرسل عبر الرسائل النصية.
-class OtpScreen extends StatefulWidget {
+class OtpScreen extends ConsumerStatefulWidget {
   final String phone;
   const OtpScreen({super.key, required this.phone});
 
   @override
-  State<OtpScreen> createState() => _OtpScreenState();
+  ConsumerState<OtpScreen> createState() => _OtpScreenState();
 }
 
-class _OtpScreenState extends State<OtpScreen> {
+class _OtpScreenState extends ConsumerState<OtpScreen> {
   final _otpController = TextEditingController();
   bool _isLoading = false;
   String? _errorText;
@@ -65,8 +67,9 @@ class _OtpScreenState extends State<OtpScreen> {
 
     if (!mounted) return;
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_phone', widget.phone);
+    final userId = await SessionService.saveSession(widget.phone);
+    if (!mounted) return;
+    ref.read(currentUserIdProvider.notifier).state = userId;
 
     if (!mounted) return;
     setState(() => _isLoading = false);

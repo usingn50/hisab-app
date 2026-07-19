@@ -8,10 +8,9 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../domain/entities/product.dart';
 import '../../providers/injection.dart';
 
-const _currentUserId = 'local-user';
-
 final productsListProvider = FutureProvider.autoDispose<List<Product>>((ref) async {
-  return ref.watch(productRepositoryProvider).getAll(_currentUserId);
+  final userId = ref.watch(currentUserIdProvider) ?? 'local-user';
+  return ref.watch(productRepositoryProvider).getAll(userId);
 });
 
 /// شاشة عرض كل المنتجات مع تنبيه واضح للمخزون المنخفض.

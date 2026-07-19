@@ -9,11 +9,10 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../domain/entities/customer.dart';
 import '../../providers/injection.dart';
 
-const _currentUserId = 'local-user';
-
 final customersListProvider =
     FutureProvider.autoDispose<List<Customer>>((ref) async {
-  return ref.watch(customerRepositoryProvider).getAll(_currentUserId);
+  final userId = ref.watch(currentUserIdProvider) ?? 'local-user';
+  return ref.watch(customerRepositoryProvider).getAll(userId);
 });
 
 /// شاشة دفتر الديون — الميزة الأهم اجتماعياً في التطبيق.

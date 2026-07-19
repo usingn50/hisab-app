@@ -4,28 +4,29 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/services/pdf_report_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../domain/entities/report.dart';
 import '../../providers/injection.dart';
 
-const _currentUserId = 'local-user';
-
 /// تقرير اليوم الحالي
 final _todayReportProvider = FutureProvider.autoDispose<Report>((ref) async {
+  final userId = ref.watch(currentUserIdProvider) ?? 'local-user';
   final getDailyReport = ref.watch(getDailyReportProvider);
-  return getDailyReport(userId: _currentUserId, date: DateTime.now());
+  return getDailyReport(userId: userId, date: DateTime.now());
 });
 
 /// تقارير آخر 7 أيام — لرسم المخطط البياني
 final _weekReportsProvider =
     FutureProvider.autoDispose<List<Report>>((ref) async {
+  final userId = ref.watch(currentUserIdProvider) ?? 'local-user';
   final getDailyReport = ref.watch(getDailyReportProvider);
   final now = DateTime.now();
   final reports = <Report>[];
   for (int i = 6; i >= 0; i--) {
     final day = now.subtract(Duration(days: i));
-    reports.add(await getDailyReport(userId: _currentUserId, date: day));
+    reports.add(await getDailyReport(userId: userId, date: day));
   }
   return reports;
 });
@@ -45,12 +46,7 @@ class ReportsScreen extends ConsumerWidget {
         title: const Text(AppStrings.reports),
         actions: [
           IconButton(
-            onPressed: () {
-              // TODO: ربط مكتبة pdf + printing لتصدير التقرير الشهري
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('سيتم تصدير التقرير كـ PDF')),
-              );
-            },
+            onPressed: () => _exportPdf(context, ref),
             icon: const Icon(Icons.picture_as_pdf_outlined),
             tooltip: AppStrings.exportPdf,
           ),
@@ -108,6 +104,41 @@ class ReportsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _exportPdf(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: AppColors.textPrimary)),
+            SizedBox(width: 12),
+            Text('جاري تجهيز التقرير...'),
+          ],
+        ),
+        duration: Duration(seconds: 20),
+      ),
+    );
+
+    try {
+      final today = await ref.read(_todayReportProvider.future);
+      final week = await ref.read(_weekReportsProvider.future);
+      await PdfReportService.shareReport(today: today, weekReports: week);
+      messenger.hideCurrentSnackBar();
+    } catch (e) {
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('تعذر إنشاء ملف PDF، حاول مرة أخرى'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
   }
 }
 
@@ -310,7 +341,7 @@ class _WeekChart extends StatelessWidget {
               barRods: [
                 BarChartRodData(
                   toY: r.profit.abs(),
-                  color: r.isProfitable ? AppColors.primary : AppColors.danger,
+                  color: r.isProfitable ? AppColors.success : AppColors.danger,
                   width: 16,
                   borderRadius: BorderRadius.circular(4),
                 ),

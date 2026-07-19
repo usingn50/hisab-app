@@ -11,15 +11,14 @@ import '../../../domain/entities/transaction.dart';
 import '../../providers/injection.dart';
 import '../../widgets/common/app_button.dart';
 
-// TODO: استبدال هذا بمعرّف المستخدم الفعلي من جلسة تسجيل الدخول
-const _currentUserId = 'local-user';
-
 final _userProductsProvider = FutureProvider<List<Product>>((ref) async {
-  return ref.watch(productRepositoryProvider).getAll(_currentUserId);
+  final userId = ref.watch(currentUserIdProvider) ?? 'local-user';
+  return ref.watch(productRepositoryProvider).getAll(userId);
 });
 
 final _userCustomersProvider = FutureProvider<List<Customer>>((ref) async {
-  return ref.watch(customerRepositoryProvider).getAll(_currentUserId);
+  final userId = ref.watch(currentUserIdProvider) ?? 'local-user';
+  return ref.watch(customerRepositoryProvider).getAll(userId);
 });
 
 /// شاشة إضافة عملية بيع — نقدي أو آجل، مرتبطة بمنتج وزبون اختياري.
@@ -82,7 +81,7 @@ class _AddSaleScreenState extends ConsumerState<AddSaleScreen> {
 
     final notifier = ref.read(transactionFormNotifierProvider.notifier);
     await notifier.submitSale(
-      userId: _currentUserId,
+      userId: ref.read(currentUserIdProvider) ?? 'local-user',
       productId: _selectedProduct!.id,
       quantity: int.parse(_qtyController.text),
       amount: double.parse(_amountController.text),

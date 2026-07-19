@@ -54,7 +54,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
 
     final product = Product(
       id: const Uuid().v4(),
-      userId: 'local-user', // TODO: من جلسة المستخدم الفعلية
+      userId: ref.read(currentUserIdProvider) ?? 'local-user',
       name: _nameController.text.trim(),
       barcode:
           _barcodeController.text.isEmpty ? null : _barcodeController.text,

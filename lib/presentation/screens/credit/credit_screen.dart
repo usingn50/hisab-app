@@ -7,17 +7,16 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../domain/usecases/calculate_credit_score.dart';
 import '../../providers/injection.dart';
 
-const _currentUserId = 'local-user';
-
 /// بيانات مدخلة لحساب الدرجة الائتمانية — تُجمع من سجل المعاملات الفعلي.
 /// حالياً نحسبها من آخر 90 يوماً من المعاملات كنقطة بداية واقعية.
 final _creditInputsProvider = FutureProvider.autoDispose<_CreditInputs>((ref) async {
+  final userId = ref.watch(currentUserIdProvider) ?? 'local-user';
   final transactionRepo = ref.watch(transactionRepositoryProvider);
   final now = DateTime.now();
   final start = now.subtract(const Duration(days: 90));
 
   final transactions = await transactionRepo.getByDateRange(
-    userId: _currentUserId,
+    userId: userId,
     start: start,
     end: now,
   );
@@ -216,7 +215,7 @@ class _ScoreGauge extends StatelessWidget {
 
   Color get _color {
     if (score >= 80) return AppColors.success;
-    if (score >= 60) return AppColors.primaryLight;
+    if (score >= 60) return AppColors.successLight;
     if (score >= 40) return AppColors.gold;
     return AppColors.danger;
   }

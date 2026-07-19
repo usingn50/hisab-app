@@ -11,13 +11,12 @@ import '../../../domain/entities/transaction.dart';
 import '../../providers/injection.dart';
 import '../../widgets/dashboard/stat_card.dart';
 
-const _currentUserId = 'local-user';
-
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final _currentUserId = ref.watch(currentUserIdProvider) ?? 'local-user';
     final overview = ref.watch(dashboardOverviewProvider(_currentUserId));
 
     return Scaffold(
@@ -82,16 +81,36 @@ class _DashboardContent extends StatelessWidget {
                 ),
               ],
             ),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-              ),
-              child: const Icon(
-                Icons.notifications_none_rounded,
-                color: AppColors.textPrimary,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                  ),
+                  child: const Icon(
+                    Icons.notifications_none_rounded,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: AppSizes.sm),
+                InkWell(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                  onTap: () => context.push('/settings'),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                    ),
+                    child: const Icon(
+                      Icons.settings_outlined,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

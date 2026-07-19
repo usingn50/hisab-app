@@ -1,5 +1,6 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/services/session_service.dart';
 import '../../data/local/database/app_database.dart';
 import '../../data/local/daos/transaction_dao.dart';
 import '../../data/local/daos/product_dao.dart';
@@ -18,6 +19,14 @@ import '../../domain/usecases/get_daily_report.dart';
 import '../../domain/usecases/calculate_credit_score.dart';
 import '../../domain/entities/report.dart';
 import '../../domain/entities/transaction.dart' as entity;
+
+/// معرّف المستخدم الحالي (رقم الهاتف بعد تسجيل الدخول عبر OTP).
+///
+/// يُهيّأ عند بدء التطبيق في main.dart من [SessionService] (قيمة محفوظة
+/// من جلسة سابقة)، ويُحدَّث فوراً بعد نجاح OTP في otp_screen.dart.
+/// كل الشاشات تعتمد على هذا المزوّد بدل استخدام 'local-user' ثابتة،
+/// فيكفي تحديث مكان واحد عند ربط تسجيل دخول حقيقي بـ Backend مستقبلاً.
+final currentUserIdProvider = StateProvider<String?>((ref) => null);
 import 'transaction_provider.dart';
 
 /// نقطة التجميع الوحيدة لكل تبعيات التطبيق.
