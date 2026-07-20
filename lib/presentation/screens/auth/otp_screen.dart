@@ -6,8 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_strings.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/services/session_service.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../providers/injection.dart';
 import '../../widgets/common/app_button.dart';
@@ -73,6 +71,16 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
     switch (result) {
       case VerifyOtpSuccess(:final userId):
+        // ينشئ سجل المستخدم في جدول users عند أول دخول فقط —
+        // لا يؤثر على تدفق الدخول إن فشل (يُعاد المحاولة ضمنياً في
+        // الجلسة التالية لأن ensureExists idempotent).
+        try {
+          await ref.read(userRepositoryProvider).ensureExists(widget.phone);
+        } catch (_) {
+          // تجاهل: عدم توفر سجل users لا يمنع استخدام التطبيق حالياً
+          // لأن userId ما زال قائماً على رقم الهاتف مباشرة.
+        }
+        if (!mounted) return;
         ref.read(currentUserIdProvider.notifier).state = userId;
         context.go('/dashboard');
       case VerifyOtpFailure(:final message):

@@ -8,6 +8,14 @@ import '../../../core/services/credit_share_service.dart';
 import '../../../core/services/session_service.dart';
 import '../../providers/injection.dart';
 
+final _accountBusinessNameProvider =
+    FutureProvider.autoDispose<String?>((ref) async {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return null;
+  final user = await ref.watch(userRepositoryProvider).getById(userId);
+  return user?.businessName;
+});
+
 /// شاشة الإعدادات — تعرض بيانات الحساب الحالي وتتيح تسجيل الخروج.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -15,6 +23,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final phone = ref.watch(currentUserIdProvider) ?? '';
+    final businessNameAsync = ref.watch(_accountBusinessNameProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -62,9 +71,9 @@ class SettingsScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Text(
-                          AppStrings.account,
-                          style: TextStyle(
+                        Text(
+                          businessNameAsync.valueOrNull ?? AppStrings.account,
+                          style: const TextStyle(
                             fontSize: AppSizes.textXs,
                             color: AppColors.textSecondary,
                           ),
