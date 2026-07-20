@@ -116,53 +116,45 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 AppSizes.screenPadding,
                 AppSizes.lg + bottomInset,
               ),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: MediaQuery.of(context).size.height -
-                      MediaQuery.of(context).padding.top -
-                      MediaQuery.of(context).padding.bottom,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: AppSizes.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: AppSizes.md),
 
-                    // ===== الهوية: الشعار + اسم التطبيق =====
-                    FadeTransition(
-                      opacity: _fade,
-                      child: SlideTransition(
-                        position: _slideHero,
-                        child: const _BrandHeader(),
+                  // ===== الهوية: الشعار + اسم التطبيق =====
+                  FadeTransition(
+                    opacity: _fade,
+                    child: SlideTransition(
+                      position: _slideHero,
+                      child: const _BrandHeader(),
+                    ),
+                  ),
+
+                  const SizedBox(height: AppSizes.xxl),
+
+                  // ===== بطاقة تسجيل الدخول =====
+                  FadeTransition(
+                    opacity: _fade,
+                    child: SlideTransition(
+                      position: _slideForm,
+                      child: _LoginCard(
+                        formKey: _formKey,
+                        phoneController: _phoneController,
+                        phoneFocus: _phoneFocus,
+                        isFocused: _isFocused,
+                        isLoading: _isLoading,
+                        onSubmit: _submit,
                       ),
                     ),
+                  ),
 
-                    const SizedBox(height: AppSizes.xxl),
+                  const SizedBox(height: AppSizes.xxl * 2),
 
-                    // ===== بطاقة تسجيل الدخول =====
-                    FadeTransition(
-                      opacity: _fade,
-                      child: SlideTransition(
-                        position: _slideForm,
-                        child: _LoginCard(
-                          formKey: _formKey,
-                          phoneController: _phoneController,
-                          phoneFocus: _phoneFocus,
-                          isFocused: _isFocused,
-                          isLoading: _isLoading,
-                          onSubmit: _submit,
-                        ),
-                      ),
-                    ),
-
-                    const Spacer(),
-                    const SizedBox(height: AppSizes.lg),
-
-                    FadeTransition(
-                      opacity: _fade,
-                      child: const _TrustFooter(),
-                    ),
-                  ],
-                ),
+                  FadeTransition(
+                    opacity: _fade,
+                    child: const _TrustFooter(),
+                  ),
+                ],
               ),
             ),
           ),
