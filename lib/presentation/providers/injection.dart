@@ -24,6 +24,7 @@ import '../../domain/usecases/calculate_credit_score.dart';
 import '../../domain/entities/app_user.dart';
 import '../../domain/entities/report.dart';
 import '../../domain/entities/transaction.dart' as entity;
+import 'transaction_provider.dart';
 
 /// معرّف المستخدم الحالي (رقم الهاتف بعد تسجيل الدخول عبر OTP).
 ///
@@ -32,7 +33,6 @@ import '../../domain/entities/transaction.dart' as entity;
 /// كل الشاشات تعتمد على هذا المزوّد بدل استخدام 'local-user' ثابتة،
 /// فيكفي تحديث مكان واحد عند ربط تسجيل دخول حقيقي بـ Backend مستقبلاً.
 final currentUserIdProvider = StateProvider<String?>((ref) => null);
-import 'transaction_provider.dart';
 
 /// نقطة التجميع الوحيدة لكل تبعيات التطبيق.
 /// أي شاشة تحتاج بيانات تستدعي الـ provider المناسب من هنا فقط.
