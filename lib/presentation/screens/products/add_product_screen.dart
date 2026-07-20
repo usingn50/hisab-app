@@ -40,11 +40,26 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
   }
 
   Future<void> _scanBarcode() async {
-    // ملاحظة: ربط mobile_scanner الفعلي يحتاج شاشة كاميرا منفصلة (CameraView)
-    // — هنا نضع نقطة الدخول والمكان الصحيح لاستدعائها.
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('سيتم فتح الكاميرا لمسح الباركود')),
-    );
+    final code = await context.push<String>('/barcode-scanner');
+    if (code == null || !mounted) return;
+
+    // تحقق من عدم وجود منتج آخر بنفس الباركود قبل الملء
+    final existing =
+        await ref.read(productRepositoryProvider).getByBarcode(code);
+    if (!mounted) return;
+
+    if (existing != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('هذا الباركود مسجّل بالفعل للمنتج: ${existing.name}'),
+          backgroundColor: AppColors.danger,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _barcodeController.text = code);
   }
 
   Future<void> _submit() async {
