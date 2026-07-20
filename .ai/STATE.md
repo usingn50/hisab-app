@@ -1,21 +1,19 @@
 # STATE
 
 Current task: none (idle — awaiting next task selection)
-Progress: 100% (both sessions' work merged; TODO list nearly clear)
-Last completed task: Business info edit UI (edit_business_screen.dart) —
-  most recent commit from the parallel session, merged in cleanly.
-  Combined with this session's work: OTP backend integration, share_token,
-  barcode scanner, app icons, and users table DAO are ALL now done
-  (see .ai/TODO.md — only two items remain unchecked).
-Next task: pick one of the two remaining TODO items:
-  1. Replace hand-authored .g.dart files with real build_runner output
-     (needs the user to run it locally — not something an AI session can
-     verify without a Flutter SDK)
-  2. PDF export real-device verification (same constraint — needs a real
-     device/emulator, not available in this sandbox)
-  Both are effectively blocked on the user running Flutter locally, so
-  functionally there is no fully AI-executable task left in the backlog.
-  Confirm with the user before inventing new scope.
+Progress: 100% (TODO list clear except two locally-blocked items)
+Last completed task: Deep code review of the parallel session's merged
+  work (AuthRepository, user DAO/repo/entity, CreditShareService,
+  barcode_scanner_screen, edit_business_screen) — traced every new
+  integration point (routes, providers, string constants, schema field
+  matches, permission manifests). No bugs found; code quality is solid
+  (proper error handling, idempotent ensureExists, correct provider
+  invalidation on business info edit, logout correctly clears both
+  session and credit share token).
+Next task: none identified that doesn't require local Flutter tooling.
+  Remaining backlog (see .ai/TODO.md) is blocked on the user running
+  build_runner and testing PDF on a real device. Do not invent new scope
+  without confirming with the user first.
 Files expected to be modified next: none confirmed yet — see Next task above,
 awaiting user decision on scope since remaining items need local Flutter tooling.
 
