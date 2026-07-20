@@ -6,15 +6,9 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/services/credit_share_service.dart';
 import '../../../core/services/session_service.dart';
+import '../../../domain/entities/app_user.dart';
 import '../../providers/injection.dart';
-
-final _accountBusinessNameProvider =
-    FutureProvider.autoDispose<String?>((ref) async {
-  final userId = ref.watch(currentUserIdProvider);
-  if (userId == null) return null;
-  final user = await ref.watch(userRepositoryProvider).getById(userId);
-  return user?.businessName;
-});
+import 'edit_business_screen.dart';
 
 /// شاشة الإعدادات — تعرض بيانات الحساب الحالي وتتيح تسجيل الخروج.
 class SettingsScreen extends ConsumerWidget {
@@ -23,7 +17,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final phone = ref.watch(currentUserIdProvider) ?? '';
-    final businessNameAsync = ref.watch(_accountBusinessNameProvider);
+    final profileAsync = ref.watch(currentUserProfileProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -35,54 +29,18 @@ class SettingsScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(AppSizes.screenPadding),
           children: [
             // ===== بطاقة الحساب =====
-            Container(
-              padding: const EdgeInsets.all(AppSizes.lg),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-                border: Border.all(color: AppColors.borderLight),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primaryDark, AppColors.primary],
-                      ),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                    ),
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.person_rounded,
-                        color: Colors.white, size: 26),
+            _AccountCard(
+              phone: phone,
+              profileAsync: profileAsync,
+              onTap: () {
+                final user = profileAsync.valueOrNull;
+                if (user == null) return; // لا ننتقل قبل اكتمال التحميل
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => EditBusinessScreen(user: user),
                   ),
-                  const SizedBox(width: AppSizes.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          phone.isEmpty ? '—' : phone,
-                          style: const TextStyle(
-                            fontSize: AppSizes.textMd,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          businessNameAsync.valueOrNull ?? AppStrings.account,
-                          style: const TextStyle(
-                            fontSize: AppSizes.textXs,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
 
             const SizedBox(height: AppSizes.xl),
@@ -147,6 +105,84 @@ class SettingsScreen extends ConsumerWidget {
 
     if (!context.mounted) return;
     context.go('/login');
+  }
+}
+
+class _AccountCard extends StatelessWidget {
+  final String phone;
+  final AsyncValue<AppUser?> profileAsync;
+  final VoidCallback onTap;
+
+  const _AccountCard({
+    required this.phone,
+    required this.profileAsync,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isReady = profileAsync.valueOrNull != null;
+
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+        onTap: isReady ? onTap : null,
+        child: Container(
+          padding: const EdgeInsets.all(AppSizes.lg),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+            border: Border.all(color: AppColors.borderLight),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.primaryDark, AppColors.primary],
+                  ),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                ),
+                alignment: Alignment.center,
+                child: const Icon(Icons.person_rounded,
+                    color: Colors.white, size: 26),
+              ),
+              const SizedBox(width: AppSizes.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      phone.isEmpty ? '—' : phone,
+                      style: const TextStyle(
+                        fontSize: AppSizes.textMd,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      profileAsync.valueOrNull?.businessName ??
+                          AppStrings.account,
+                      style: const TextStyle(
+                        fontSize: AppSizes.textXs,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isReady)
+                const Icon(Icons.chevron_left_rounded,
+                    color: AppColors.textHint),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

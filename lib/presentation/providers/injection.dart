@@ -21,6 +21,7 @@ import '../../domain/usecases/add_sale.dart';
 import '../../domain/usecases/add_expense.dart';
 import '../../domain/usecases/get_daily_report.dart';
 import '../../domain/usecases/calculate_credit_score.dart';
+import '../../domain/entities/app_user.dart';
 import '../../domain/entities/report.dart';
 import '../../domain/entities/transaction.dart' as entity;
 
@@ -96,6 +97,17 @@ final customerRepositoryProvider = Provider<CustomerRepository>((ref) {
 
 final userRepositoryProvider = Provider<UserRepository>((ref) {
   return UserRepositoryImpl(ref.watch(userDaoProvider));
+});
+
+/// يجلب سجل المستخدم الكامل (اسم النشاط، النوع، المدينة) — عام (public)
+/// حتى تستطيع شاشات أخرى مثل edit_business_screen استدعاء
+/// `ref.invalidate(currentUserProfileProvider)` بعد التعديل لتحديث
+/// العرض في شاشة الإعدادات فوراً.
+final currentUserProfileProvider =
+    FutureProvider.autoDispose<AppUser?>((ref) async {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return null;
+  return ref.watch(userRepositoryProvider).getById(userId);
 });
 
 // ===== UseCases =====
