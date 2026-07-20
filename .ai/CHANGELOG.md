@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## 2026-07-19 (session 5)
+- Generated app icon programmatically (Python/PIL — no external design tool
+  available in sandbox): white receipt card + gold checkmark badge on a
+  navy-to-blue diagonal gradient, matching splash_screen.dart colors exactly
+  (background 0xFF0F172A -> primaryDark 0xFF1D4ED8, badge gold 0xFFEAB308).
+  No text, per decided direction in TODO.md.
+- Replaced all Android legacy mipmap ic_launcher.png (mdpi..xxxhdpi)
+- Added Android adaptive icon: ic_launcher_foreground/background per density
+  + mipmap-anydpi-v26/ic_launcher.xml (was completely absent — app had no
+  adaptive icon support before this, only fell back to flat legacy icon)
+- Replaced all iOS AppIcon.appiconset PNGs (20pt..1024pt); flattened to RGB
+  (no alpha) per App Store requirement — source master had transparency
+- Replaced web/icons (192, 512, maskable variants) and web/favicon.png
+- Design is a placeholder-quality vector-style mark; a professional
+  designer pass is still recommended before public store submission, but
+  every icon slot in the repo is now populated with an on-brand asset
+  instead of Flutter's default icon
+
 ## 2026-07-19 (session 4)
 - Added AppUser entity, UserRepository interface, UserRepositoryImpl
 - Added UserDao (+ hand-authored user_dao.g.dart mixin, matches existing DAO pattern)
