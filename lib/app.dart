@@ -11,6 +11,7 @@ import 'presentation/screens/transactions/add_sale_screen.dart';
 import 'presentation/screens/transactions/add_expense_screen.dart';
 import 'presentation/screens/products/products_screen.dart';
 import 'presentation/screens/products/add_product_screen.dart';
+import 'presentation/screens/products/barcode_scanner_screen.dart';
 import 'presentation/screens/customers/customers_screen.dart';
 import 'presentation/screens/customers/add_customer_screen.dart';
 import 'presentation/screens/reports/reports_screen.dart';
@@ -73,6 +74,10 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/add-expense',
       builder: (context, state) => const AddExpenseScreen(),
+    ),
+    GoRoute(
+      path: '/barcode-scanner',
+      builder: (context, state) => const BarcodeScannerScreen(),
     ),
     GoRoute(
       path: '/products',

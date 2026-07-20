@@ -94,6 +94,13 @@ class AppStrings {
   static const String logoutConfirmTitle = 'تسجيل الخروج';
   static const String logoutConfirmMessage =
       'هل أنت متأكد من تسجيل الخروج؟ بياناتك تبقى محفوظة على جهازك.';
-  static const String cancel = 'إلغاء';
   static const String appVersion = 'إصدار التطبيق';
+
+  // تعديل بيانات النشاط التجاري
+  static const String editProfile = 'تعديل بيانات النشاط';
+  static const String businessName = 'اسم النشاط التجاري';
+  static const String businessType = 'نوع النشاط';
+  static const String city = 'المدينة';
+  static const String saveChanges = 'حفظ التعديلات';
+  static const String profileUpdated = 'تم تحديث بيانات النشاط بنجاح';
 }

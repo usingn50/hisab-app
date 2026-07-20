@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_strings.dart';
-import '../../../core/services/session_service.dart';
+import '../../../data/repositories/auth_repository.dart';
 import '../../providers/injection.dart';
 import '../../widgets/common/app_button.dart';
 
@@ -62,27 +62,54 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       _errorText = null;
     });
 
-    // TODO: استدعاء AuthRepository.verifyOtp(phone, code) عبر api_client
-    await Future.delayed(const Duration(milliseconds: 700));
-
-    if (!mounted) return;
-
-    final userId = await SessionService.saveSession(widget.phone);
-    if (!mounted) return;
-    ref.read(currentUserIdProvider.notifier).state = userId;
+    final result = await ref
+        .read(authRepositoryProvider)
+        .verifyOtp(widget.phone, _otpController.text);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
-    context.go('/dashboard');
+
+    switch (result) {
+      case VerifyOtpSuccess(:final userId):
+        // ينشئ سجل المستخدم في جدول users عند أول دخول فقط —
+        // لا يؤثر على تدفق الدخول إن فشل (يُعاد المحاولة ضمنياً في
+        // الجلسة التالية لأن ensureExists idempotent).
+        try {
+          await ref.read(userRepositoryProvider).ensureExists(widget.phone);
+        } catch (_) {
+          // تجاهل: عدم توفر سجل users لا يمنع استخدام التطبيق حالياً
+          // لأن userId ما زال قائماً على رقم الهاتف مباشرة.
+        }
+        if (!mounted) return;
+        ref.read(currentUserIdProvider.notifier).state = userId;
+        context.go('/dashboard');
+      case VerifyOtpFailure(:final message):
+        setState(() => _errorText = message);
+        HapticFeedback.vibrate();
+    }
   }
 
-  void _resend() {
+  Future<void> _resend() async {
     if (_secondsLeft > 0) return;
-    // TODO: استدعاء AuthRepository.sendOtp(phone) مرة أخرى
     _startTimer();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم إرسال رمز جديد')),
-    );
+    final result = await ref
+        .read(authRepositoryProvider)
+        .sendOtp(widget.phone);
+    if (!mounted) return;
+    switch (result) {
+      case SendOtpSuccess():
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم إرسال رمز جديد')),
+        );
+      case SendOtpFailure(:final message):
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: AppColors.danger,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    }
   }
 
   @override
@@ -117,7 +144,36 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: AppSizes.xl),
+              const SizedBox(height: AppSizes.md),
+
+              // وضع التطوير — يُخفى تلقائياً عند تفعيل الـ Backend
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.md, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.gold.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                  border: Border.all(
+                      color: AppColors.gold.withValues(alpha: 0.25)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.developer_mode_rounded,
+                        size: 16, color: AppColors.gold),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'وضع التطوير — استخدم الرمز: 123456',
+                        style: TextStyle(
+                            fontSize: AppSizes.textXs,
+                            color: AppColors.goldLight),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: AppSizes.lg),
 
               TextField(
                 controller: _otpController,
