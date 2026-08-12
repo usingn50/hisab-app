@@ -44,7 +44,8 @@ class PdfReportService {
           margin: const pw.EdgeInsets.only(top: 8),
           child: pw.Text(
             'صفحة ${context.pageNumber} من ${context.pagesCount}',
-            style: pw.TextStyle(font: regularFont, fontSize: 9, color: _textGray),
+            style:
+                pw.TextStyle(font: regularFont, fontSize: 9, color: _textGray),
           ),
         ),
         build: (context) => [
@@ -99,8 +100,8 @@ class PdfReportService {
             ),
             alignment: pw.Alignment.center,
             child: pw.Text('ح',
-                style: pw.TextStyle(
-                    font: boldFont, fontSize: 20, color: _gold)),
+                style:
+                    pw.TextStyle(font: boldFont, fontSize: 20, color: _gold)),
           ),
         ],
       ),
@@ -118,14 +119,11 @@ class PdfReportService {
       children: [
         _summaryCard('الإيراد', today.revenue, _success, boldFont, regularFont),
         pw.SizedBox(width: 10),
-        _summaryCard('المصاريف', today.expenses, _danger, boldFont, regularFont),
-        pw.SizedBox(width: 10),
         _summaryCard(
-            'الربح',
-            today.profit,
-            today.isProfitable ? _success : _danger,
-            boldFont,
-            regularFont),
+            'المصاريف', today.expenses, _danger, boldFont, regularFont),
+        pw.SizedBox(width: 10),
+        _summaryCard('الربح', today.profit,
+            today.isProfitable ? _success : _danger, boldFont, regularFont),
       ],
     );
   }
@@ -136,7 +134,7 @@ class PdfReportService {
       child: pw.Container(
         padding: const pw.EdgeInsets.all(12),
         decoration: pw.BoxDecoration(
-          color: PdfColor.fromInt(0xFFF8FAFC),
+          color: const PdfColor.fromInt(0xFFF8FAFC),
           borderRadius: pw.BorderRadius.circular(8),
           border: pw.Border.all(color: _borderGray, width: 0.6),
         ),
@@ -148,7 +146,8 @@ class PdfReportService {
                     font: regularFont, fontSize: 9, color: _textGray)),
             pw.SizedBox(height: 4),
             pw.Text(CurrencyFormatter.format(amount),
-                style: pw.TextStyle(font: boldFont, fontSize: 13, color: color)),
+                style:
+                    pw.TextStyle(font: boldFont, fontSize: 13, color: color)),
           ],
         ),
       ),
@@ -166,9 +165,11 @@ class PdfReportService {
                 p.productName,
               ])
           .toList(),
-      headerStyle: pw.TextStyle(font: boldFont, fontSize: 10, color: PdfColors.white),
+      headerStyle:
+          pw.TextStyle(font: boldFont, fontSize: 10, color: PdfColors.white),
       headerDecoration: const pw.BoxDecoration(color: _brandBlue),
-      cellStyle: pw.TextStyle(font: regularFont, fontSize: 9.5, color: _textDark),
+      cellStyle:
+          pw.TextStyle(font: regularFont, fontSize: 9.5, color: _textDark),
       cellAlignment: pw.Alignment.centerRight,
       headerAlignment: pw.Alignment.centerRight,
       border: pw.TableBorder.all(color: _borderGray, width: 0.5),
@@ -189,14 +190,17 @@ class PdfReportService {
                 DateFormatter.formatShort(r.startDate),
               ])
           .toList(),
-      headerStyle: pw.TextStyle(font: boldFont, fontSize: 10, color: PdfColors.white),
+      headerStyle:
+          pw.TextStyle(font: boldFont, fontSize: 10, color: PdfColors.white),
       headerDecoration: const pw.BoxDecoration(color: _brandBlue),
-      cellStyle: pw.TextStyle(font: regularFont, fontSize: 9.5, color: _textDark),
+      cellStyle:
+          pw.TextStyle(font: regularFont, fontSize: 9.5, color: _textDark),
       cellAlignment: pw.Alignment.centerRight,
       headerAlignment: pw.Alignment.centerRight,
       border: pw.TableBorder.all(color: _borderGray, width: 0.5),
       cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-      oddRowDecoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
+      oddRowDecoration:
+          const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
     );
   }
 
@@ -208,7 +212,8 @@ class PdfReportService {
     final bytes = await buildReportPdf(today: today, weekReports: weekReports);
     await Printing.sharePdf(
       bytes: bytes,
-      filename: 'hisab_report_${DateFormatter.formatShort(DateTime.now()).replaceAll('/', '-')}.pdf',
+      filename:
+          'hisab_report_${DateFormatter.formatShort(DateTime.now()).replaceAll('/', '-')}.pdf',
     );
   }
 }

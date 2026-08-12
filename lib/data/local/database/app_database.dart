@@ -11,6 +11,8 @@ class Users extends Table {
   TextColumn get businessType => text()();
   TextColumn get city => text()();
   TextColumn get plan => text().withDefault(const Constant('free'))();
+  TextColumn get baseCurrencyCode =>
+      text().withDefault(const Constant('YER'))();
   DateTimeColumn get createdAt => dateTime()();
 
   @override
@@ -56,10 +58,27 @@ class Transactions extends Table {
   TextColumn get type => text()();
   TextColumn get payment => text()();
   RealColumn get amount => real()();
+  TextColumn get currencyCode => text().withDefault(const Constant('YER'))();
+  RealColumn get exchangeRate => real().withDefault(const Constant(1))();
+  RealColumn get baseAmount => real().nullable()();
   IntColumn get quantity => integer().withDefault(const Constant(1))();
   TextColumn get notes => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   BoolColumn get synced => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// ===== جدول أسعار الصرف =====
+class ExchangeRates extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get fromCurrency => text()();
+  TextColumn get toCurrency => text()();
+  RealColumn get rate => real()();
+  DateTimeColumn get effectiveAt => dateTime()();
+  DateTimeColumn get createdAt => dateTime()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -80,11 +99,32 @@ class CreditProfiles extends Table {
 }
 
 @DriftDatabase(
-  tables: [Users, Products, Customers, Transactions, CreditProfiles],
+  tables: [
+    Users,
+    Products,
+    Customers,
+    Transactions,
+    ExchangeRates,
+    CreditProfiles,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) async => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.addColumn(users, users.baseCurrencyCode);
+            await m.addColumn(transactions, transactions.currencyCode);
+            await m.addColumn(transactions, transactions.exchangeRate);
+            await m.addColumn(transactions, transactions.baseAmount);
+            await m.createTable(exchangeRates);
+          }
+        },
+      );
 }

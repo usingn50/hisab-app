@@ -1,33 +1,44 @@
 import 'package:intl/intl.dart';
 
+import '../../domain/entities/currency.dart';
+
 class CurrencyFormatter {
   CurrencyFormatter._();
 
   static final NumberFormat _formatter = NumberFormat.decimalPattern('ar');
 
-  /// يحول 15000 إلى "15,000 ريال"
-  static String format(double amount) {
-    return '${_formatter.format(amount)} ريال';
+  static String format(
+    double amount, {
+    CurrencyCode currency = CurrencyCode.yer,
+  }) {
+    return '${formatNumberOnly(amount)} ${currency.symbol}';
   }
 
-  /// يحول 15000 إلى "15,000" بدون كلمة ريال (للاستخدام داخل بطاقات)
   static String formatNumberOnly(double amount) {
     return _formatter.format(amount);
   }
 
-  /// يضيف + أو - حسب نوع المبلغ (دخل/مصروف)
-  static String formatSigned(double amount, {required bool isIncome}) {
+  static String formatSigned(
+    double amount, {
+    required bool isIncome,
+    CurrencyCode? currency,
+  }) {
     final sign = isIncome ? '+' : '-';
-    return '$sign${_formatter.format(amount.abs())}';
+    final suffix = currency == null ? '' : ' ${currency.symbol}';
+    return '$sign${_formatter.format(amount.abs())}$suffix';
   }
 
-  /// يحول الأرقام الكبيرة لصيغة مختصرة: 15000 -> 15K
-  static String formatCompact(double amount) {
-    if (amount >= 1000000) {
-      return '${(amount / 1000000).toStringAsFixed(1)}M';
-    } else if (amount >= 1000) {
-      return '${(amount / 1000).toStringAsFixed(1)}K';
-    }
-    return amount.toStringAsFixed(0);
+  static String formatCompact(
+    double amount, {
+    CurrencyCode? currency,
+  }) {
+    final value = amount.abs();
+    final formatted = value >= 1000000
+        ? '${(value / 1000000).toStringAsFixed(1)}M'
+        : value >= 1000
+            ? '${(value / 1000).toStringAsFixed(1)}K'
+            : value.toStringAsFixed(0);
+    final suffix = currency == null ? '' : ' ${currency.symbol}';
+    return '${amount < 0 ? '-' : ''}$formatted$suffix';
   }
 }

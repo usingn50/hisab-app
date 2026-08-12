@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/validators.dart';
+import '../../../domain/entities/currency.dart';
 import '../../providers/injection.dart';
 import '../../widgets/common/app_button.dart';
 
@@ -31,12 +32,15 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
+  final _exchangeRateController = TextEditingController(text: '1');
   String? _selectedCategory;
+  CurrencyCode _currency = CurrencyCode.yer;
 
   @override
   void dispose() {
     _amountController.dispose();
     _notesController.dispose();
+    _exchangeRateController.dispose();
     super.dispose();
   }
 
@@ -52,6 +56,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     await notifier.submitExpense(
       userId: ref.read(currentUserIdProvider) ?? 'local-user',
       amount: double.parse(_amountController.text),
+      currency: _currency,
+      exchangeRate: double.parse(_exchangeRateController.text),
       notes: notes.isEmpty ? null : notes,
     );
 
@@ -91,12 +97,51 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   fontWeight: FontWeight.w800,
                 ),
                 textAlign: TextAlign.center,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: AppStrings.amount,
-                  suffixText: 'ريال',
+                  suffixText: _currency.symbol,
                 ),
                 validator: Validators.amount,
               ),
+              const SizedBox(height: AppSizes.md),
+              DropdownButtonFormField<CurrencyCode>(
+                initialValue: _currency,
+                decoration: const InputDecoration(labelText: 'العملة'),
+                items: CurrencyCode.values
+                    .map(
+                      (currency) => DropdownMenuItem(
+                        value: currency,
+                        child: Text('${currency.label} (${currency.value})'),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (currency) {
+                  if (currency == null) return;
+                  setState(() {
+                    _currency = currency;
+                    if (currency == CurrencyCode.yer) {
+                      _exchangeRateController.text = '1';
+                    }
+                  });
+                },
+              ),
+              if (_currency != CurrencyCode.yer) ...[
+                const SizedBox(height: AppSizes.md),
+                TextFormField(
+                  controller: _exchangeRateController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'سعر الصرف إلى الريال اليمني',
+                    suffixText: 'ر.ي',
+                  ),
+                  validator: (value) {
+                    final rate = double.tryParse(value ?? '');
+                    return rate == null || rate <= 0
+                        ? 'أدخل سعر صرف صحيحاً'
+                        : null;
+                  },
+                ),
+              ],
               const SizedBox(height: AppSizes.lg),
               Text('نوع المصروف',
                   style: Theme.of(context).textTheme.bodyMedium),

@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/validators.dart';
+import '../../../domain/entities/currency.dart';
 import '../../../domain/entities/product.dart';
 import '../../../domain/entities/customer.dart';
 import '../../../domain/entities/transaction.dart';
@@ -34,23 +35,26 @@ class _AddSaleScreenState extends ConsumerState<AddSaleScreen> {
   final _amountController = TextEditingController();
   final _qtyController = TextEditingController(text: '1');
   final _notesController = TextEditingController();
+  final _exchangeRateController = TextEditingController(text: '1');
 
   Product? _selectedProduct;
   Customer? _selectedCustomer;
   PaymentMethod _payment = PaymentMethod.cash;
+  CurrencyCode _currency = CurrencyCode.yer;
 
   @override
   void dispose() {
     _amountController.dispose();
     _qtyController.dispose();
     _notesController.dispose();
+    _exchangeRateController.dispose();
     super.dispose();
   }
 
   void _onProductSelected(Product? product) {
     setState(() {
       _selectedProduct = product;
-      if (product != null) {
+      if (product != null && _currency == CurrencyCode.yer) {
         final qty = int.tryParse(_qtyController.text) ?? 1;
         _amountController.text = (product.sellPrice * qty).toStringAsFixed(0);
       }
@@ -58,7 +62,7 @@ class _AddSaleScreenState extends ConsumerState<AddSaleScreen> {
   }
 
   void _recalculateAmount() {
-    if (_selectedProduct == null) return;
+    if (_selectedProduct == null || _currency != CurrencyCode.yer) return;
     final qty = int.tryParse(_qtyController.text) ?? 1;
     _amountController.text =
         (_selectedProduct!.sellPrice * qty).toStringAsFixed(0);
@@ -86,6 +90,8 @@ class _AddSaleScreenState extends ConsumerState<AddSaleScreen> {
       quantity: int.parse(_qtyController.text),
       amount: double.parse(_amountController.text),
       payment: _payment,
+      currency: _currency,
+      exchangeRate: double.parse(_exchangeRateController.text),
       customerId: _selectedCustomer?.id,
       notes: _notesController.text.isEmpty ? null : _notesController.text,
     );
@@ -142,6 +148,54 @@ class _AddSaleScreenState extends ConsumerState<AddSaleScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: AppSizes.md),
+              DropdownButtonFormField<CurrencyCode>(
+                initialValue: _currency,
+                decoration: const InputDecoration(labelText: 'عملة البيع'),
+                items: CurrencyCode.values
+                    .map(
+                      (currency) => DropdownMenuItem(
+                        value: currency,
+                        child: Text('${currency.label} (${currency.value})'),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (currency) {
+                  if (currency == null) return;
+                  setState(() {
+                    _currency = currency;
+                    if (currency == CurrencyCode.yer) {
+                      _exchangeRateController.text = '1';
+                      _recalculateAmount();
+                    }
+                  });
+                },
+              ),
+              if (_currency != CurrencyCode.yer) ...[
+                const SizedBox(height: AppSizes.md),
+                TextFormField(
+                  controller: _exchangeRateController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'سعر الصرف إلى الريال اليمني',
+                    suffixText: 'ر.ي',
+                  ),
+                  validator: (value) {
+                    final rate = double.tryParse(value ?? '');
+                    return rate == null || rate <= 0
+                        ? 'أدخل سعر صرف صحيحاً'
+                        : null;
+                  },
+                ),
+                const SizedBox(height: AppSizes.xs),
+                const Text(
+                  'أدخل مبلغ البيع بالعملة المختارة؛ سعر المنتج الحالي بالريال اليمني.',
+                  style: TextStyle(
+                    fontSize: AppSizes.textXs,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
               const SizedBox(height: AppSizes.lg),
 
               // اختيار المنتج
@@ -199,8 +253,10 @@ class _AddSaleScreenState extends ConsumerState<AddSaleScreen> {
                       controller: _amountController,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
-                      decoration:
-                          const InputDecoration(labelText: AppStrings.amount),
+                      decoration: InputDecoration(
+                        labelText: AppStrings.amount,
+                        suffixText: _currency.symbol,
+                      ),
                       validator: Validators.amount,
                     ),
                   ),

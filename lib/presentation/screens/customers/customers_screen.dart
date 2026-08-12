@@ -8,6 +8,7 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../domain/entities/customer.dart';
 import '../../providers/injection.dart';
+import '../../widgets/common/app_main_navigation.dart';
 
 final customersListProvider =
     FutureProvider.autoDispose<List<Customer>>((ref) async {
@@ -54,16 +55,12 @@ class CustomersScreen extends ConsumerWidget {
         label: const Text(AppStrings.addCustomer,
             style: TextStyle(fontWeight: FontWeight.w700)),
       ),
+      bottomNavigationBar: const AppMainNavigation(currentIndex: 2),
       body: SafeArea(
         child: customersAsync.when(
           data: (customers) {
             if (customers.isEmpty) {
-              return _EmptyState(
-                onAdd: () async {
-                  await context.push('/customers/add');
-                  ref.invalidate(customersListProvider);
-                },
-              );
+              return const _EmptyState();
             }
 
             final totalDebt =
@@ -71,8 +68,7 @@ class CustomersScreen extends ConsumerWidget {
             final overdueCount = customers.where((c) => c.isOverdue).length;
 
             // الزبائن المتأخرون أولاً، ثم الأعلى ديناً
-            final sorted = [...customers]
-              ..sort((a, b) {
+            final sorted = [...customers]..sort((a, b) {
                 if (a.isOverdue != b.isOverdue) {
                   return a.isOverdue ? -1 : 1;
                 }
@@ -92,7 +88,8 @@ class CustomersScreen extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: AppColors.gold.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-                      border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
+                      border: Border.all(
+                          color: AppColors.gold.withValues(alpha: 0.25)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,8 +196,9 @@ class _CustomerTile extends StatelessWidget {
                     color: customer.isOverdue
                         ? AppColors.danger
                         : AppColors.textSecondary,
-                    fontWeight:
-                        customer.isOverdue ? FontWeight.w700 : FontWeight.normal,
+                    fontWeight: customer.isOverdue
+                        ? FontWeight.w700
+                        : FontWeight.normal,
                   ),
                 ),
               ],
@@ -238,35 +236,36 @@ class _CustomerTile extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  final VoidCallback onAdd;
-  const _EmptyState({required this.onAdd});
+  const _EmptyState();
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppSizes.xl),
+        padding: EdgeInsets.all(AppSizes.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.people_outline_rounded,
+            Icon(Icons.people_outline_rounded,
                 size: 56, color: AppColors.textHint),
-            const SizedBox(height: AppSizes.md),
-            const Text('لا يوجد زبائن بعد',
+            SizedBox(height: AppSizes.md),
+            Text('لا يوجد زبائن بعد',
                 style: TextStyle(
                     fontSize: AppSizes.textLg,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary)),
-            const SizedBox(height: AppSizes.xs),
-            const Text('أضف زبائنك لتتبع ديونهم بسهولة',
+            SizedBox(height: AppSizes.xs),
+            Text('أضف زبائنك لتتبع ديونهم بسهولة',
                 style: TextStyle(color: AppColors.textSecondary),
                 textAlign: TextAlign.center),
-            const SizedBox(height: AppSizes.lg),
-            TextButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add_rounded, color: AppColors.primary),
-              label: const Text(AppStrings.addCustomer,
-                  style: TextStyle(color: AppColors.primary)),
+            SizedBox(height: AppSizes.xs),
+            Text(
+              'استخدم زر الإضافة بالأسفل لإضافة أول زبون.',
+              style: TextStyle(
+                fontSize: AppSizes.textXs,
+                color: AppColors.textHint,
+              ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

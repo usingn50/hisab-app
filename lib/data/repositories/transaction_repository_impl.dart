@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
+import '../../domain/entities/currency.dart';
 import '../../domain/entities/transaction.dart' as entity;
 import '../../domain/repositories/transaction_repository.dart';
 import '../local/daos/transaction_dao.dart';
@@ -24,6 +25,9 @@ class TransactionRepositoryImpl implements TransactionRepository {
           ? entity.PaymentMethod.cash
           : entity.PaymentMethod.credit,
       amount: row.amount,
+      currency: currencyCodeFromValue(row.currencyCode),
+      exchangeRate: row.exchangeRate,
+      baseAmount: row.baseAmount,
       quantity: row.quantity,
       notes: row.notes,
       createdAt: row.createdAt,
@@ -41,6 +45,9 @@ class TransactionRepositoryImpl implements TransactionRepository {
       payment:
           Value(t.payment == entity.PaymentMethod.cash ? 'cash' : 'credit'),
       amount: Value(t.amount),
+      currencyCode: Value(t.currency.value),
+      exchangeRate: Value(t.exchangeRate),
+      baseAmount: Value(t.baseAmount),
       quantity: Value(t.quantity),
       notes: Value(t.notes),
       createdAt: Value(t.createdAt),

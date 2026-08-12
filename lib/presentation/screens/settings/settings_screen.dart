@@ -55,10 +55,10 @@ class SettingsScreen extends ConsumerWidget {
 
             const SizedBox(height: AppSizes.xxl),
 
-            Center(
+            const Center(
               child: Text(
                 '${AppStrings.appVersion}: 1.0.0',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: AppSizes.textXs,
                   color: AppColors.textHint,
                 ),
@@ -230,8 +230,7 @@ class _SettingsTile extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(Icons.chevron_left_rounded,
-                  color: AppColors.textHint),
+              const Icon(Icons.chevron_left_rounded, color: AppColors.textHint),
             ],
           ),
         ),

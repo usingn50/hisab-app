@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/entities/currency.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/usecases/add_sale.dart';
 import '../../domain/usecases/add_expense.dart';
@@ -43,6 +44,8 @@ class TransactionFormNotifier extends StateNotifier<TransactionFormState> {
     required int quantity,
     required double amount,
     required PaymentMethod payment,
+    CurrencyCode currency = CurrencyCode.yer,
+    double exchangeRate = 1,
     String? customerId,
     String? notes,
   }) async {
@@ -54,6 +57,8 @@ class TransactionFormNotifier extends StateNotifier<TransactionFormState> {
         quantity: quantity,
         amount: amount,
         payment: payment,
+        currency: currency,
+        exchangeRate: exchangeRate,
         customerId: customerId,
         notes: notes,
       );
@@ -66,11 +71,19 @@ class TransactionFormNotifier extends StateNotifier<TransactionFormState> {
   Future<void> submitExpense({
     required String userId,
     required double amount,
+    CurrencyCode currency = CurrencyCode.yer,
+    double exchangeRate = 1,
     String? notes,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      await addExpense(userId: userId, amount: amount, notes: notes);
+      await addExpense(
+        userId: userId,
+        amount: amount,
+        currency: currency,
+        exchangeRate: exchangeRate,
+        notes: notes,
+      );
       state = state.copyWith(isLoading: false, isSuccess: true);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
