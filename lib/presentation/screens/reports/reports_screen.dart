@@ -9,6 +9,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../domain/entities/report.dart';
 import '../../providers/injection.dart';
+import '../../widgets/common/app_main_navigation.dart';
 
 /// تقرير اليوم الحالي
 final _todayReportProvider = FutureProvider.autoDispose<Report>((ref) async {
@@ -44,14 +45,22 @@ class ReportsScreen extends ConsumerWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(AppStrings.reports),
-        actions: [
-          IconButton(
-            onPressed: () => _exportPdf(context, ref),
-            icon: const Icon(Icons.picture_as_pdf_outlined),
-            tooltip: AppStrings.exportPdf,
-          ),
-        ],
+        actions: todayAsync.maybeWhen(
+          data: (report) {
+            final hasData = report.revenue != 0 || report.expenses != 0;
+            if (!hasData) return const [];
+            return [
+              IconButton(
+                onPressed: () => _exportPdf(context, ref),
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                tooltip: AppStrings.exportPdf,
+              ),
+            ];
+          },
+          orElse: () => const [],
+        ),
       ),
+      bottomNavigationBar: const AppMainNavigation(currentIndex: 3),
       body: SafeArea(
         child: RefreshIndicator(
           color: AppColors.primary,
@@ -67,14 +76,12 @@ class ReportsScreen extends ConsumerWidget {
                       color: AppColors.textSecondary,
                       fontSize: AppSizes.textSm)),
               const SizedBox(height: AppSizes.md),
-
               todayAsync.when(
                 data: (report) => _TodaySummary(report: report),
                 loading: () => const _SummarySkeleton(),
                 error: (e, _) => const Text('تعذر تحميل التقرير',
                     style: TextStyle(color: AppColors.danger)),
               ),
-
               const SizedBox(height: AppSizes.xl),
               const Text(
                 'آخر 7 أيام',
@@ -85,19 +92,17 @@ class ReportsScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AppSizes.md),
-
               weekAsync.when(
                 data: (reports) => _WeekChart(reports: reports),
                 loading: () => const SizedBox(
                   height: 200,
                   child: Center(
-                      child: CircularProgressIndicator(
-                          color: AppColors.primary)),
+                      child:
+                          CircularProgressIndicator(color: AppColors.primary)),
                 ),
                 error: (e, _) => const Text('تعذر تحميل المخطط',
                     style: TextStyle(color: AppColors.danger)),
               ),
-
               const SizedBox(height: AppSizes.xxl),
             ],
           ),
@@ -148,6 +153,8 @@ class _TodaySummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isEmpty = report.revenue == 0 && report.expenses == 0;
+
     return Column(
       children: [
         Container(
@@ -155,9 +162,11 @@ class _TodaySummary extends StatelessWidget {
           padding: const EdgeInsets.all(AppSizes.lg),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: report.isProfitable
-                  ? [AppColors.success, AppColors.successLight]
-                  : [AppColors.danger, const Color(0xFFB91C1C)],
+              colors: isEmpty
+                  ? [AppColors.surfaceLight, AppColors.surface]
+                  : report.isProfitable
+                      ? [AppColors.success, AppColors.successLight]
+                      : [AppColors.danger, const Color(0xFFB91C1C)],
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
             ),
@@ -167,7 +176,8 @@ class _TodaySummary extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(AppStrings.profit,
-                  style: TextStyle(color: Colors.white70, fontSize: AppSizes.textSm)),
+                  style: TextStyle(
+                      color: Colors.white70, fontSize: AppSizes.textSm)),
               const SizedBox(height: 4),
               Text(
                 CurrencyFormatter.format(report.profit),
@@ -181,7 +191,8 @@ class _TodaySummary extends StatelessWidget {
                 report.revenue == 0
                     ? 'لا توجد عمليات اليوم بعد'
                     : 'هامش ربح ${report.profitMargin.toStringAsFixed(0)}%',
-                style: const TextStyle(color: Colors.white70, fontSize: AppSizes.textXs),
+                style: const TextStyle(
+                    color: Colors.white70, fontSize: AppSizes.textXs),
               ),
             ],
           ),
@@ -298,7 +309,8 @@ class _WeekChart extends StatelessWidget {
 
     return Container(
       height: 220,
-      padding: const EdgeInsets.fromLTRB(8, AppSizes.md, AppSizes.md, AppSizes.sm),
+      padding:
+          const EdgeInsets.fromLTRB(8, AppSizes.md, AppSizes.md, AppSizes.sm),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),

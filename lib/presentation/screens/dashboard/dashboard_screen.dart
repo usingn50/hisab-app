@@ -7,222 +7,446 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../domain/entities/report.dart';
 import '../../../domain/entities/transaction.dart';
 import '../../providers/injection.dart';
-import '../../widgets/dashboard/stat_card.dart';
+import '../../widgets/common/app_main_navigation.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final _currentUserId = ref.watch(currentUserIdProvider) ?? 'local-user';
-    final overview = ref.watch(dashboardOverviewProvider(_currentUserId));
+    final currentUserId = ref.watch(currentUserIdProvider) ?? 'local-user';
+    final overview = ref.watch(dashboardOverviewProvider(currentUserId));
+    final profile = ref.watch(currentUserProfileProvider);
+    final businessName = profile.maybeWhen(
+      data: (user) => user?.businessName.trim().isNotEmpty == true
+          ? user!.businessName
+          : AppStrings.appName,
+      orElse: () => AppStrings.appName,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      bottomNavigationBar: const AppMainNavigation(currentIndex: 0),
       body: SafeArea(
         child: overview.when(
           data: (data) => RefreshIndicator(
             onRefresh: () async {
-              ref.invalidate(dashboardOverviewProvider(_currentUserId));
-              await ref.read(dashboardOverviewProvider(_currentUserId).future);
+              ref.invalidate(dashboardOverviewProvider(currentUserId));
+              await ref.read(dashboardOverviewProvider(currentUserId).future);
             },
-            child: _DashboardContent(overview: data),
+            child: _DashboardContent(
+              overview: data,
+              businessName: businessName,
+            ),
           ),
           loading: () => const Center(
             child: CircularProgressIndicator(color: AppColors.primary),
           ),
           error: (_, __) => _DashboardError(
             onRetry: () =>
-                ref.invalidate(dashboardOverviewProvider(_currentUserId)),
+                ref.invalidate(dashboardOverviewProvider(currentUserId)),
           ),
         ),
       ),
-      bottomNavigationBar: const _BottomNav(),
     );
   }
 }
 
 class _DashboardContent extends StatelessWidget {
   final DashboardOverview overview;
+  final String businessName;
 
-  const _DashboardContent({required this.overview});
+  const _DashboardContent({
+    required this.overview,
+    required this.businessName,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final report = overview.report;
-
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(AppSizes.screenPadding),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.screenPadding,
+        AppSizes.lg,
+        AppSizes.screenPadding,
+        AppSizes.xxl,
+      ),
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  DateFormatter.formatFull(DateTime.now()),
-                  style: const TextStyle(
-                    fontSize: AppSizes.textSm,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                const Text(
-                  'مرحباً بك',
-                  style: TextStyle(
-                    fontSize: AppSizes.textXl,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                  ),
-                  child: const Icon(
-                    Icons.notifications_none_rounded,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(width: AppSizes.sm),
-                InkWell(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                  onTap: () => context.push('/settings'),
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                    ),
-                    child: const Icon(
-                      Icons.settings_outlined,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+        _DashboardHeader(businessName: businessName),
         const SizedBox(height: AppSizes.lg),
-        Container(
-          padding: const EdgeInsets.all(AppSizes.lg),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.primaryDark, AppColors.primary],
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-            ),
-            borderRadius: BorderRadius.circular(AppSizes.radiusXl),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                AppStrings.todayProfit,
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: AppSizes.textSm,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                CurrencyFormatter.format(report.profit),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: AppSizes.textDisplay,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-        ),
+        _TodaySummary(report: overview.report),
         const SizedBox(height: AppSizes.md),
-        Row(
-          children: [
-            Expanded(
-              child: StatCard(
-                label: AppStrings.todaySales,
-                amount: report.revenue,
-                icon: Icons.trending_up_rounded,
-                color: AppColors.success,
-              ),
+        SizedBox(
+          height: AppSizes.buttonHeight,
+          child: ElevatedButton.icon(
+            onPressed: () => context.push('/add-sale'),
+            icon: const Icon(Icons.point_of_sale_rounded),
+            label: const Text('تسجيل بيع'),
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.white,
+              backgroundColor: AppColors.primary,
             ),
-            const SizedBox(width: AppSizes.sm),
-            Expanded(
-              child: StatCard(
-                label: AppStrings.todayExpenses,
-                amount: report.expenses,
-                icon: Icons.trending_down_rounded,
-                color: AppColors.danger,
-              ),
-            ),
-          ],
+          ),
         ),
         const SizedBox(height: AppSizes.sm),
-        StatCard(
-          label: AppStrings.totalDebt,
-          amount: overview.totalDebt,
-          icon: Icons.account_balance_wallet_outlined,
-          color: AppColors.gold,
-        ),
-        const SizedBox(height: AppSizes.lg),
         Row(
           children: [
             Expanded(
-              child: _QuickAction(
-                label: AppStrings.addSale,
-                icon: Icons.point_of_sale_rounded,
-                color: AppColors.primary,
-                onTap: () => context.push('/add-sale'),
+              child: _SecondaryAction(
+                label: 'متابعة الديون',
+                icon: Icons.account_balance_wallet_outlined,
+                onTap: () => context.go('/customers'),
               ),
             ),
             const SizedBox(width: AppSizes.sm),
             Expanded(
-              child: _QuickAction(
+              child: _SecondaryAction(
                 label: AppStrings.addExpense,
-                icon: Icons.receipt_long_rounded,
-                color: AppColors.danger,
+                icon: Icons.receipt_long_outlined,
                 onTap: () => context.push('/add-expense'),
               ),
             ),
           ],
         ),
-        const SizedBox(height: AppSizes.lg),
+        if (overview.totalDebt > 0 || overview.lowStockCount > 0) ...[
+          const SizedBox(height: AppSizes.xl),
+          const Text(
+            'يحتاج متابعة',
+            style: TextStyle(
+              fontSize: AppSizes.textLg,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: AppSizes.sm),
+          if (overview.totalDebt > 0)
+            _AttentionCard(
+              icon: Icons.account_balance_wallet_outlined,
+              color: AppColors.gold,
+              title: 'مستحقات العملاء',
+              detail: CurrencyFormatter.format(overview.totalDebt),
+              actionLabel: 'عرض الزبائن',
+              onTap: () => context.go('/customers'),
+            ),
+          if (overview.totalDebt > 0 && overview.lowStockCount > 0)
+            const SizedBox(height: AppSizes.sm),
+          if (overview.lowStockCount > 0)
+            _AttentionCard(
+              icon: Icons.inventory_2_outlined,
+              color: AppColors.warning,
+              title: 'مخزون يحتاج تعبئة',
+              detail: '${overview.lowStockCount} منتجات منخفضة المخزون',
+              actionLabel: 'عرض المنتجات',
+              onTap: () => context.go('/products'),
+            ),
+        ],
+        const SizedBox(height: AppSizes.xl),
         const Text(
           AppStrings.recentTransactions,
           style: TextStyle(
             fontSize: AppSizes.textLg,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
             color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: AppSizes.sm),
         if (overview.recentTransactions.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: AppSizes.lg),
-            child: Center(
-              child: Text(
-                'لا توجد عمليات مسجلة بعد',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-            ),
-          )
+          const _EmptyActivity()
         else
           ...overview.recentTransactions
               .map((transaction) => _TransactionTile(transaction: transaction)),
-        const SizedBox(height: AppSizes.xxl),
       ],
+    );
+  }
+}
+
+class _DashboardHeader extends StatelessWidget {
+  final String businessName;
+
+  const _DashboardHeader({required this.businessName});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                DateFormatter.formatFull(DateTime.now()),
+                style: const TextStyle(
+                  fontSize: AppSizes.textSm,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                businessName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: AppSizes.textXl,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: AppSizes.md),
+        IconButton(
+          tooltip: AppStrings.settings,
+          onPressed: () => context.push('/settings'),
+          style: IconButton.styleFrom(
+            backgroundColor: AppColors.surface,
+            foregroundColor: AppColors.textPrimary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            ),
+          ),
+          icon: const Icon(Icons.settings_outlined),
+        ),
+      ],
+    );
+  }
+}
+
+class _TodaySummary extends StatelessWidget {
+  final Report report;
+
+  const _TodaySummary({required this.report});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasActivity = report.revenue != 0 || report.expenses != 0;
+    final isProfit = report.profit > 0;
+    final isLoss = report.profit < 0;
+    final color = !hasActivity
+        ? AppColors.primary
+        : isProfit
+            ? AppColors.success
+            : isLoss
+                ? AppColors.danger
+                : AppColors.primary;
+    final label = !hasActivity
+        ? 'ملخص اليوم'
+        : isProfit
+            ? 'ربح اليوم'
+            : isLoss
+                ? 'نتيجة اليوم'
+                : 'تعادل اليوم';
+    final subtitle = !hasActivity
+        ? 'لم تسجل أي عملية اليوم بعد'
+        : 'مبيعات ${CurrencyFormatter.formatNumberOnly(report.revenue)} · مصاريف ${CurrencyFormatter.formatNumberOnly(report.expenses)}';
+
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.lg),
+      decoration: BoxDecoration(
+        color: !hasActivity ? AppColors.surface : color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+        border: Border.all(
+            color: color.withValues(alpha: hasActivity ? 0.38 : 0.24)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            ),
+            child: Icon(
+              !hasActivity
+                  ? Icons.calendar_today_outlined
+                  : isLoss
+                      ? Icons.trending_down_rounded
+                      : Icons.trending_up_rounded,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: AppSizes.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: AppSizes.textSm,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  CurrencyFormatter.format(report.profit),
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: AppSizes.textXxl,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: AppSizes.textXs,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SecondaryAction extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _SecondaryAction({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: AppSizes.iconSm),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.textPrimary,
+        side: const BorderSide(color: AppColors.borderLight),
+        padding: const EdgeInsets.symmetric(vertical: AppSizes.sm),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        ),
+      ),
+    );
+  }
+}
+
+class _AttentionCard extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String detail;
+  final String actionLabel;
+  final VoidCallback onTap;
+
+  const _AttentionCard({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.detail,
+    required this.actionLabel,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+      child: Container(
+        padding: const EdgeInsets.all(AppSizes.md),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+          border: Border.all(color: color.withValues(alpha: 0.28)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+              ),
+              child: Icon(icon, color: color, size: AppSizes.iconSm),
+            ),
+            const SizedBox(width: AppSizes.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    detail,
+                    style: const TextStyle(
+                      fontSize: AppSizes.textXs,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              actionLabel,
+              style: TextStyle(
+                fontSize: AppSizes.textXs,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+            const SizedBox(width: 2),
+            Icon(Icons.chevron_left_rounded, size: 18, color: color),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyActivity extends StatelessWidget {
+  const _EmptyActivity();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.xl),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: const Column(
+        children: [
+          Icon(
+            Icons.receipt_long_outlined,
+            size: AppSizes.iconLg,
+            color: AppColors.textHint,
+          ),
+          SizedBox(height: AppSizes.sm),
+          Text(
+            'ابدأ بتسجيل أول بيع لتظهر حركة يومك هنا',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: AppSizes.textSm,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -236,8 +460,9 @@ class _DashboardError extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(AppSizes.screenPadding),
       children: [
-        const SizedBox(height: 160),
+        const SizedBox(height: 140),
         const Icon(
           Icons.cloud_off_rounded,
           color: AppColors.textSecondary,
@@ -245,52 +470,12 @@ class _DashboardError extends StatelessWidget {
         ),
         const SizedBox(height: AppSizes.md),
         const Center(child: Text('تعذر تحميل بيانات لوحة التحكم')),
-        TextButton(onPressed: onRetry, child: const Text('إعادة المحاولة')),
+        const SizedBox(height: AppSizes.sm),
+        Center(
+          child: TextButton(
+              onPressed: onRetry, child: const Text(AppStrings.retry)),
+        ),
       ],
-    );
-  }
-}
-
-class _QuickAction extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _QuickAction({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: AppSizes.md),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: AppSizes.iconLg),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: AppSizes.textSm,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -313,6 +498,7 @@ class _TransactionTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
@@ -333,15 +519,28 @@ class _TransactionTile extends StatelessWidget {
           ),
           const SizedBox(width: AppSizes.sm),
           Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: AppSizes.textSm,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: AppSizes.textSm,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  DateFormatter.formatRelative(transaction.createdAt),
+                  style: const TextStyle(
+                    fontSize: AppSizes.textXs,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
           Text(
@@ -349,61 +548,12 @@ class _TransactionTile extends StatelessWidget {
                 isIncome: isSale),
             style: TextStyle(
               fontSize: AppSizes.textSm,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
               color: isSale ? AppColors.success : AppColors.danger,
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _BottomNav extends StatelessWidget {
-  const _BottomNav();
-
-  @override
-  Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: 0,
-      onTap: (index) {
-        switch (index) {
-          case 1:
-            context.push('/products');
-            break;
-          case 2:
-            context.push('/customers');
-            break;
-          case 3:
-            context.push('/reports');
-            break;
-          case 4:
-            context.push('/credit');
-            break;
-        }
-      },
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_rounded),
-          label: 'الرئيسية',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.inventory_2_outlined),
-          label: 'المنتجات',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.people_outline_rounded),
-          label: 'الزبائن',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart_rounded),
-          label: 'التقارير',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.verified_outlined),
-          label: 'الائتمان',
-        ),
-      ],
     );
   }
 }

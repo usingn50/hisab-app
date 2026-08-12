@@ -349,8 +349,7 @@ class _LoginCard extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                 border: Border.all(
-                  color:
-                      isFocused ? AppColors.primary : AppColors.borderLight,
+                  color: isFocused ? AppColors.primary : AppColors.borderLight,
                   width: isFocused ? 1.6 : 1,
                 ),
                 boxShadow: isFocused
@@ -367,11 +366,11 @@ class _LoginCard extends StatelessWidget {
                 children: [
                   Container(
                     height: AppSizes.inputHeight,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: AppSizes.md),
-                    decoration: BoxDecoration(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                    decoration: const BoxDecoration(
                       color: AppColors.surfaceLight,
-                      borderRadius: const BorderRadius.horizontal(
+                      borderRadius: BorderRadius.horizontal(
                         right: Radius.circular(AppSizes.radiusMd - 1),
                       ),
                     ),

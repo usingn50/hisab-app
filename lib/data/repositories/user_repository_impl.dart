@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart';
 import '../../domain/entities/app_user.dart' as entity;
 import '../../domain/repositories/user_repository.dart';
 import '../local/daos/user_dao.dart';
@@ -22,6 +21,7 @@ class UserRepositoryImpl implements UserRepository {
       businessType: row.businessType,
       city: row.city,
       plan: row.plan,
+      baseCurrencyCode: row.baseCurrencyCode,
       createdAt: row.createdAt,
     );
   }

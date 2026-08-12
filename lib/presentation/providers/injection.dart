@@ -6,6 +6,7 @@ import '../../data/local/daos/transaction_dao.dart';
 import '../../data/local/daos/product_dao.dart';
 import '../../data/local/daos/customer_dao.dart';
 import '../../data/local/daos/user_dao.dart';
+import '../../data/local/daos/exchange_rate_dao.dart';
 import '../../data/remote/api_client.dart';
 import '../../data/remote/sync_service.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -13,10 +14,12 @@ import '../../data/repositories/transaction_repository_impl.dart';
 import '../../data/repositories/product_repository_impl.dart';
 import '../../data/repositories/customer_repository_impl.dart';
 import '../../data/repositories/user_repository_impl.dart';
+import '../../data/repositories/exchange_rate_repository_impl.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../../domain/repositories/customer_repository.dart';
 import '../../domain/repositories/user_repository.dart';
+import '../../domain/repositories/exchange_rate_repository.dart';
 import '../../domain/usecases/add_sale.dart';
 import '../../domain/usecases/add_expense.dart';
 import '../../domain/usecases/get_daily_report.dart';
@@ -61,6 +64,10 @@ final userDaoProvider = Provider<UserDao>((ref) {
   return UserDao(ref.watch(appDatabaseProvider));
 });
 
+final exchangeRateDaoProvider = Provider<ExchangeRateDao>((ref) {
+  return ExchangeRateDao(ref.watch(appDatabaseProvider));
+});
+
 // ===== الشبكة =====
 final apiClientProvider = Provider<ApiClient>((ref) {
   return ApiClient();
@@ -99,6 +106,10 @@ final userRepositoryProvider = Provider<UserRepository>((ref) {
   return UserRepositoryImpl(ref.watch(userDaoProvider));
 });
 
+final exchangeRateRepositoryProvider = Provider<ExchangeRateRepository>((ref) {
+  return ExchangeRateRepositoryImpl(ref.watch(exchangeRateDaoProvider));
+});
+
 /// يجلب سجل المستخدم الكامل (اسم النشاط، النوع، المدينة) — عام (public)
 /// حتى تستطيع شاشات أخرى مثل edit_business_screen استدعاء
 /// `ref.invalidate(currentUserProfileProvider)` بعد التعديل لتحديث
@@ -120,12 +131,15 @@ final addSaleProvider = Provider<AddSale>((ref) {
     transactionRepository: ref.watch(transactionRepositoryProvider),
     productRepository: ref.watch(productRepositoryProvider),
     customerRepository: ref.watch(customerRepositoryProvider),
+    exchangeRateRepository: ref.watch(exchangeRateRepositoryProvider),
   );
 });
 
 final addExpenseProvider = Provider<AddExpense>((ref) {
   return AddExpense(
-      transactionRepository: ref.watch(transactionRepositoryProvider));
+    transactionRepository: ref.watch(transactionRepositoryProvider),
+    exchangeRateRepository: ref.watch(exchangeRateRepositoryProvider),
+  );
 });
 
 final getDailyReportProvider = Provider<GetDailyReport>((ref) {
@@ -157,11 +171,13 @@ class DashboardOverview {
   final Report report;
   final List<entity.Transaction> recentTransactions;
   final double totalDebt;
+  final int lowStockCount;
 
   const DashboardOverview({
     required this.report,
     required this.recentTransactions,
     required this.totalDebt,
+    required this.lowStockCount,
   });
 }
 
@@ -177,6 +193,7 @@ final dashboardOverviewProvider =
   final recentTransactions =
       await ref.watch(transactionRepositoryProvider).getRecent(userId);
   final customers = await ref.watch(customerRepositoryProvider).getAll(userId);
+  final products = await ref.watch(productRepositoryProvider).getAll(userId);
 
   return DashboardOverview(
     report: report,
@@ -185,5 +202,6 @@ final dashboardOverviewProvider =
       0,
       (total, customer) => total + customer.totalDebt,
     ),
+    lowStockCount: products.where((product) => product.isLowStock).length,
   );
 });

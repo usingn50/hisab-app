@@ -8,6 +8,7 @@ import '../../../core/services/credit_share_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../domain/usecases/calculate_credit_score.dart';
 import '../../providers/injection.dart';
+import '../../widgets/common/app_main_navigation.dart';
 
 // ─── providers ───────────────────────────────────────────────────────────────
 
@@ -32,10 +33,9 @@ final _creditInputsProvider =
 
   final sorted = [...transactions]
     ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-  final monthsActive =
-      ((now.difference(sorted.first.createdAt).inDays) / 30)
-          .ceil()
-          .clamp(0, 999);
+  final monthsActive = ((now.difference(sorted.first.createdAt).inDays) / 30)
+      .ceil()
+      .clamp(0, 999);
 
   final sales = transactions.where((t) => t.isSale);
   final totalRevenue = sales.fold<double>(0, (s, t) => s + t.amount);
@@ -86,6 +86,7 @@ class CreditScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text(AppStrings.creditScore)),
+      bottomNavigationBar: const AppMainNavigation(currentIndex: 4),
       body: SafeArea(
         child: inputsAsync.when(
           data: (inputs) {
@@ -135,8 +136,7 @@ class CreditScreen extends ConsumerWidget {
                   _ShareCard(
                     score: score,
                     classify: classify,
-                    userId:
-                        ref.watch(currentUserIdProvider) ?? 'local-user',
+                    userId: ref.watch(currentUserIdProvider) ?? 'local-user',
                   ),
 
                 const SizedBox(height: AppSizes.xl),
@@ -152,11 +152,9 @@ class CreditScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSizes.sm),
                 const _FactorRow(label: 'مدة النشاط', weight: '30%'),
-                const _FactorRow(
-                    label: 'متوسط الإيراد الشهري', weight: '25%'),
+                const _FactorRow(label: 'متوسط الإيراد الشهري', weight: '25%'),
                 const _FactorRow(label: 'ثبات الأرباح', weight: '25%'),
-                const _FactorRow(
-                    label: 'انضباط تحصيل الديون', weight: '20%'),
+                const _FactorRow(label: 'انضباط تحصيل الديون', weight: '20%'),
                 const SizedBox(height: AppSizes.xxl),
               ],
             );
@@ -284,7 +282,6 @@ class _ShareCardState extends State<_ShareCard> {
               ),
             ],
           ),
-
           if (_token != null) ...[
             const SizedBox(height: AppSizes.md),
             Container(
@@ -318,7 +315,6 @@ class _ShareCardState extends State<_ShareCard> {
               ),
             ),
           ],
-
           const SizedBox(height: AppSizes.md),
           Row(
             children: [
@@ -332,8 +328,7 @@ class _ShareCardState extends State<_ShareCard> {
                     side: const BorderSide(color: AppColors.primary),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppSizes.radiusMd),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                     ),
                   ),
                 ),
@@ -357,8 +352,7 @@ class _ShareCardState extends State<_ShareCard> {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppSizes.radiusMd),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                     ),
                   ),
                 ),
@@ -397,8 +391,7 @@ class _LockedShareCard extends StatelessWidget {
               '${monthsLeft == 1 ? 'شهر إضافي' : 'أشهر إضافية'} '
               'لفتح مشاركة الملف الائتماني مع الموردين',
               style: const TextStyle(
-                  fontSize: AppSizes.textXs,
-                  color: AppColors.textSecondary),
+                  fontSize: AppSizes.textXs, color: AppColors.textSecondary),
             ),
           ),
         ],
@@ -466,8 +459,7 @@ class _ScoreGauge extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppSizes.radiusFull),
             ),
             child: Text(classify,
-                style: TextStyle(
-                    color: _color, fontWeight: FontWeight.w800)),
+                style: TextStyle(color: _color, fontWeight: FontWeight.w800)),
           ),
         ],
       ),
@@ -501,8 +493,7 @@ class _MetricCard extends StatelessWidget {
         const SizedBox(height: 6),
         Text(label,
             style: const TextStyle(
-                fontSize: AppSizes.textXs,
-                color: AppColors.textSecondary)),
+                fontSize: AppSizes.textXs, color: AppColors.textSecondary)),
         const SizedBox(height: 2),
         Text(value,
             style: const TextStyle(
@@ -536,8 +527,7 @@ class _FactorRow extends StatelessWidget {
                 style: const TextStyle(color: AppColors.textSecondary))),
         Text(weight,
             style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700)),
+                color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
       ]),
     );
   }

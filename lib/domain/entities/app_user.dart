@@ -9,6 +9,7 @@ class AppUser {
   final String businessType;
   final String city;
   final String plan;
+  final String baseCurrencyCode;
   final DateTime createdAt;
 
   const AppUser({
@@ -18,6 +19,7 @@ class AppUser {
     required this.businessType,
     required this.city,
     this.plan = 'free',
+    this.baseCurrencyCode = 'YER',
     required this.createdAt,
   });
 

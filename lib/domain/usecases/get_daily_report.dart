@@ -22,11 +22,11 @@ class GetDailyReport {
 
     final revenue = transactions
         .where((t) => t.type == TransactionType.sale)
-        .fold<double>(0, (sum, t) => sum + t.amount);
+        .fold<double>(0, (sum, t) => sum + t.amountInBaseCurrency);
 
     final expenses = transactions
         .where((t) => t.type == TransactionType.expense)
-        .fold<double>(0, (sum, t) => sum + t.amount);
+        .fold<double>(0, (sum, t) => sum + t.amountInBaseCurrency);
 
     return Report(
       id: '${userId}_${startOfDay.toIso8601String()}',

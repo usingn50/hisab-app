@@ -7,8 +7,10 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../domain/entities/product.dart';
 import '../../providers/injection.dart';
+import '../../widgets/common/app_main_navigation.dart';
 
-final productsListProvider = FutureProvider.autoDispose<List<Product>>((ref) async {
+final productsListProvider =
+    FutureProvider.autoDispose<List<Product>>((ref) async {
   final userId = ref.watch(currentUserIdProvider) ?? 'local-user';
   return ref.watch(productRepositoryProvider).getAll(userId);
 });
@@ -35,20 +37,15 @@ class ProductsScreen extends ConsumerWidget {
         label: const Text(AppStrings.addProduct,
             style: TextStyle(fontWeight: FontWeight.w700)),
       ),
+      bottomNavigationBar: const AppMainNavigation(currentIndex: 1),
       body: SafeArea(
         child: productsAsync.when(
           data: (products) {
             if (products.isEmpty) {
-              return _EmptyState(
-                onAdd: () async {
-                  await context.push('/products/add');
-                  ref.invalidate(productsListProvider);
-                },
-              );
+              return const _EmptyState();
             }
 
-            final lowStockCount =
-                products.where((p) => p.isLowStock).length;
+            final lowStockCount = products.where((p) => p.isLowStock).length;
 
             return RefreshIndicator(
               color: AppColors.primary,
@@ -63,8 +60,8 @@ class ProductsScreen extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: AppColors.danger.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                        border:
-                            Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
+                        border: Border.all(
+                            color: AppColors.danger.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         children: [
@@ -90,8 +87,8 @@ class ProductsScreen extends ConsumerWidget {
               ),
             );
           },
-          loading: () =>
-              const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          loading: () => const Center(
+              child: CircularProgressIndicator(color: AppColors.primary)),
           error: (e, _) => const Center(
             child: Text('تعذر تحميل المنتجات',
                 style: TextStyle(color: AppColors.danger)),
@@ -181,35 +178,36 @@ class _ProductTile extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  final VoidCallback onAdd;
-  const _EmptyState({required this.onAdd});
+  const _EmptyState();
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppSizes.xl),
+        padding: EdgeInsets.all(AppSizes.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.inventory_2_outlined,
+            Icon(Icons.inventory_2_outlined,
                 size: 56, color: AppColors.textHint),
-            const SizedBox(height: AppSizes.md),
-            const Text('لا توجد منتجات بعد',
+            SizedBox(height: AppSizes.md),
+            Text('لا توجد منتجات بعد',
                 style: TextStyle(
                     fontSize: AppSizes.textLg,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary)),
-            const SizedBox(height: AppSizes.xs),
-            const Text('أضف أول منتج لتبدأ تسجيل المبيعات',
+            SizedBox(height: AppSizes.xs),
+            Text('أضف أول منتج لتبدأ تسجيل المبيعات',
                 style: TextStyle(color: AppColors.textSecondary),
                 textAlign: TextAlign.center),
-            const SizedBox(height: AppSizes.lg),
-            TextButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add_rounded, color: AppColors.primary),
-              label: const Text(AppStrings.addProduct,
-                  style: TextStyle(color: AppColors.primary)),
+            SizedBox(height: AppSizes.xs),
+            Text(
+              'استخدم زر الإضافة بالأسفل لإضافة منتجك الأول.',
+              style: TextStyle(
+                fontSize: AppSizes.textXs,
+                color: AppColors.textHint,
+              ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
