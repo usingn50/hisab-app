@@ -3,34 +3,37 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // الألوان الأساسية — تطابق هوية الأيقونة الجديدة (ذهبي/أزرق)
-  static const Color primary = Color(0xFF3B82F6);        // أزرق
-  static const Color primaryDark = Color(0xFF1D4ED8);
+  static const Color primary = Color(0xFF3B82F6);
+  static const Color primaryDark = Color(0xFF2563EB);
   static const Color primaryLight = Color(0xFF93C5FD);
+  static const Color onPrimary = Color(0xFFFFFFFF);
 
-  // الذهبي للمميزات
   static const Color gold = Color(0xFFEAB308);
-  static const Color goldLight = Color(0xFFFDE047);
+  static const Color goldLight = Color(0xFFFDE68A);
 
-  // خلفيات
-  static const Color background = Color(0xFF0F172A);     // أزرق داكن جداً
-  static const Color surface = Color(0xFF1E293B);        // بطاقات
-  static const Color surfaceLight = Color(0xFF334155);   // عناصر ثانوية
+  static const Color background = Color(0xFF0F172A);
+  static const Color surface = Color(0xFF1E293B);
+  static const Color surfaceElevated = Color(0xFF263449);
+  static const Color surfaceLight = Color(0xFF334155);
+  static const Color surfaceMuted = Color(0xFF162238);
 
-  // نصوص
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFF94A3B8);
-  static const Color textHint = Color(0xFF475569);
+  static const Color textPrimary = Color(0xFFF8FAFC);
+  static const Color textSecondary = Color(0xFFB6C2D2);
+  static const Color textHint = Color(0xFF7C8CA3);
 
-  // حالات — success يبقى أخضر عمداً (دلالة مالية عالمية: ربح/إيجابي)
-  // ومنفصل تماماً عن primary حتى لو تغيّر لون العلامة التجارية مستقبلاً
   static const Color success = Color(0xFF22C55E);
   static const Color successLight = Color(0xFF86EFAC);
-  static const Color danger = Color(0xFFEF4444);
-  static const Color warning = Color(0xFFEAB308);
-  static const Color info = Color(0xFF06B6D4);
+  static const Color successBackground = Color(0xFF153A2A);
 
-  // الحدود
-  static const Color border = Color(0xFF1E293B);
-  static const Color borderLight = Color(0xFF334155);
+  static const Color danger = Color(0xFFEF4444);
+  static const Color dangerBackground = Color(0xFF3B1F2A);
+
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color warningBackground = Color(0xFF3B2D10);
+
+  static const Color info = Color(0xFF38BDF8);
+  static const Color infoBackground = Color(0xFF123249);
+
+  static const Color border = Color(0xFF334155);
+  static const Color borderLight = Color(0xFF475569);
 }
