@@ -75,7 +75,7 @@ class _DashboardContent extends StatelessWidget {
       children: [
         _DashboardHeader(businessName: businessName),
         const SizedBox(height: AppSizes.lg),
-        _TodaySummary(report: overview.report),
+        _FinancialReportCard(report: overview.report),
         const SizedBox(height: AppSizes.md),
         SizedBox(
           height: AppSizes.buttonHeight,
@@ -212,68 +212,90 @@ class _DashboardHeader extends StatelessWidget {
   }
 }
 
-class _TodaySummary extends StatelessWidget {
+class _FinancialReportCard extends StatelessWidget {
   final Report report;
 
-  const _TodaySummary({required this.report});
+  const _FinancialReportCard({required this.report});
 
   @override
   Widget build(BuildContext context) {
     final hasActivity = report.revenue != 0 || report.expenses != 0;
     final isProfit = report.profit > 0;
     final isLoss = report.profit < 0;
-    final color = !hasActivity
-        ? AppColors.primary
+    final resultColor = isProfit
+        ? AppColors.success
+        : isLoss
+            ? AppColors.danger
+            : AppColors.primary;
+    final resultLabel = !hasActivity
+        ? 'نتيجة اليوم'
         : isProfit
-            ? AppColors.success
+            ? 'صافي الربح'
             : isLoss
-                ? AppColors.danger
-                : AppColors.primary;
-    final label = !hasActivity
-        ? 'ملخص اليوم'
-        : isProfit
-            ? 'ربح اليوم'
-            : isLoss
-                ? 'نتيجة اليوم'
+                ? 'صافي الخسارة'
                 : 'تعادل اليوم';
-    final subtitle = !hasActivity
-        ? 'لم تسجل أي عملية اليوم بعد'
-        : 'مبيعات ${CurrencyFormatter.formatNumberOnly(report.revenue)} · مصاريف ${CurrencyFormatter.formatNumberOnly(report.expenses)}';
+    final resultDescription = !hasActivity
+        ? 'سجّل أول بيع لتبدأ قراءة الأداء المالي.'
+        : isProfit
+            ? 'هامش ربح ${report.profitMargin.toStringAsFixed(0)}% اليوم.'
+            : isLoss
+                ? 'المصروفات أعلى من الإيرادات اليوم.'
+                : 'تساوت الإيرادات والمصروفات اليوم.';
 
     return Container(
       padding: const EdgeInsets.all(AppSizes.lg),
       decoration: BoxDecoration(
-        color: !hasActivity ? AppColors.surface : color.withValues(alpha: 0.14),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppSizes.radiusXl),
-        border: Border.all(
-          color: color.withValues(alpha: hasActivity ? 0.38 : 0.24),
-        ),
+        border: Border.all(color: AppColors.border),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                ),
+                child: const Icon(
+                  Icons.insights_outlined,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: AppSizes.sm),
+              const Expanded(
+                child: Text(
+                  'التقرير المالي اليومي',
+                  style: TextStyle(
+                    fontSize: AppSizes.textMd,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => context.go('/reports'),
+                child: const Text('التفاصيل'),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.md),
           Container(
-            width: 46,
-            height: 46,
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppSizes.md),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.16),
+              color: resultColor.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(AppSizes.radiusMd),
             ),
-            child: Icon(
-              !hasActivity
-                  ? Icons.calendar_today_outlined
-                  : isLoss
-                      ? Icons.trending_down_rounded
-                      : Icons.trending_up_rounded,
-              color: color,
-            ),
-          ),
-          const SizedBox(width: AppSizes.md),
-          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  label,
+                  resultLabel,
                   style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: AppSizes.textSm,
@@ -282,23 +304,105 @@ class _TodaySummary extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   CurrencyFormatter.format(report.profit),
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: resultColor,
                     fontSize: AppSizes.textXxl,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  resultDescription,
                   style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: AppSizes.textXs,
                   ),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: AppSizes.sm),
+          Row(
+            children: [
+              Expanded(
+                child: _FinancialMetric(
+                  label: AppStrings.revenue,
+                  value: report.revenue,
+                  icon: Icons.trending_up_rounded,
+                  color: AppColors.success,
+                ),
+              ),
+              const SizedBox(width: AppSizes.sm),
+              Expanded(
+                child: _FinancialMetric(
+                  label: AppStrings.expenses,
+                  value: report.expenses,
+                  icon: Icons.trending_down_rounded,
+                  color: AppColors.danger,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.sm),
+          const Text(
+            'القيم موحّدة حسب العملة الأساسية للنشاط.',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: AppSizes.textXs,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FinancialMetric extends StatelessWidget {
+  final String label;
+  final double value;
+  final IconData icon;
+  final Color color;
+
+  const _FinancialMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveColor = value == 0 ? AppColors.textSecondary : color;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.sm),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: AppSizes.iconSm, color: effectiveColor),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: AppSizes.textXs,
+            ),
+          ),
+          const SizedBox(height: 2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              CurrencyFormatter.format(value),
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: AppSizes.textMd,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ],
