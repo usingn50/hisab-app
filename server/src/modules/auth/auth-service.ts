@@ -5,6 +5,7 @@ import type { FastifyInstance } from 'fastify';
 import type { AppConfig } from '../../config.js';
 import { ApiError } from '../../core/api-error.js';
 import type { DatabaseClient } from '../../db/client.js';
+import { createOtpProvider, type OtpProvider } from './otp-provider.js';
 
 type UserRow = {
   id: string;
@@ -37,11 +38,15 @@ type AuthSession = {
 };
 
 export class AuthService {
+  private readonly otpProvider: OtpProvider;
+
   constructor(
     private readonly database: DatabaseClient,
     private readonly app: FastifyInstance,
     private readonly config: AppConfig,
-  ) {}
+  ) {
+    this.otpProvider = createOtpProvider(config);
+  }
 
   async requestOtp(phone: string): Promise<{ accepted: true; expiresInSeconds: number }> {
     const [recent] = await this.database<{ count: string }[]>`
@@ -55,55 +60,77 @@ export class AuthService {
       throw new ApiError(429, 'OTP_RATE_LIMITED', 'تم تجاوز حد طلب الرموز. حاول لاحقاً.');
     }
 
-    if (this.config.OTP_PROVIDER !== 'development') {
-      throw new ApiError(503, 'OTP_PROVIDER_UNAVAILABLE', 'مزود التحقق غير متاح حالياً.');
-    }
-
-    const code = this.config.OTP_DEVELOPMENT_CODE;
-    if (!code) {
-      throw new ApiError(500, 'OTP_CONFIGURATION_ERROR', 'إعداد التحقق غير مكتمل.');
-    }
-
+    const delivery = await this.otpProvider.request(phone);
     await this.database`
-      INSERT INTO otp_challenges (phone_e164, code_hash, expires_at)
-      VALUES (${phone}, ${this.hashOtp(phone, code)}, now() + interval '10 minutes')
+      INSERT INTO otp_challenges (phone_e164, provider, provider_reference, expires_at)
+      VALUES (
+        ${phone},
+        ${this.config.OTP_PROVIDER},
+        ${delivery.reference},
+        now() + (${delivery.expiresInSeconds} * interval '1 second')
+      )
     `;
 
-    return { accepted: true, expiresInSeconds: 600 };
+    return { accepted: true, expiresInSeconds: delivery.expiresInSeconds };
   }
 
   async verifyOtp(phone: string, code: string, deviceId: string): Promise<AuthSession> {
+    const [challenge] = await this.database<{
+      id: string;
+      provider: 'development' | 'twilio';
+      provider_reference: string | null;
+      attempt_count: number;
+    }[]>`
+      SELECT id, provider, provider_reference, attempt_count
+      FROM otp_challenges
+      WHERE phone_e164 = ${phone}
+        AND verified_at IS NULL
+        AND expires_at > now()
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+
+    if (!challenge || challenge.attempt_count >= 5 || challenge.provider !== this.config.OTP_PROVIDER) {
+      throw new ApiError(401, 'OTP_INVALID', 'رمز التحقق غير صالح أو منتهي.');
+    }
+
+    const isVerified = await this.otpProvider.verify(
+      phone,
+      code,
+      challenge.provider_reference,
+    );
+
     const user = await this.database.begin(async (transaction) => {
-      const [challenge] = await transaction<{
+      const [lockedChallenge] = await transaction<{
         id: string;
-        code_hash: string;
         attempt_count: number;
       }[]>`
-        SELECT id, code_hash, attempt_count
+        SELECT id, attempt_count
         FROM otp_challenges
-        WHERE phone_e164 = ${phone}
+        WHERE id = ${challenge.id}::uuid
           AND verified_at IS NULL
           AND expires_at > now()
-        ORDER BY created_at DESC
         LIMIT 1
         FOR UPDATE
       `;
 
-      if (!challenge || challenge.attempt_count >= 5) {
+      if (!lockedChallenge || lockedChallenge.attempt_count >= 5) {
         throw new ApiError(401, 'OTP_INVALID', 'رمز التحقق غير صالح أو منتهي.');
       }
 
-      if (challenge.code_hash !== this.hashOtp(phone, code)) {
+      if (!isVerified) {
         await transaction`
           UPDATE otp_challenges
           SET attempt_count = attempt_count + 1
-          WHERE id = ${challenge.id}
+          WHERE id = ${lockedChallenge.id}::uuid
         `;
         throw new ApiError(401, 'OTP_INVALID', 'رمز التحقق غير صالح أو منتهي.');
       }
 
       await transaction`
-        UPDATE otp_challenges SET verified_at = now() WHERE id = ${challenge.id}
+        UPDATE otp_challenges
+        SET verified_at = now()
+        WHERE id = ${lockedChallenge.id}::uuid
       `;
 
       const [existing] = await transaction<UserRow[]>`
@@ -282,9 +309,6 @@ export class AuthService {
     }));
   }
 
-  private hashOtp(phone: string, code: string): string {
-    return createHash('sha256').update(`${phone}:${code}`).digest('hex');
-  }
 
   private hashToken(token: string): string {
     return createHash('sha256').update(token).digest('hex');
