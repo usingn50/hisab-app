@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_strings.dart';
@@ -44,8 +45,9 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
     if (code == null || !mounted) return;
 
     // تحقق من عدم وجود منتج آخر بنفس الباركود قبل الملء
-    final existing =
-        await ref.read(productRepositoryProvider).getByBarcode(code);
+    final existing = await ref
+        .read(productRepositoryProvider)
+        .getByBarcode(code);
     if (!mounted) return;
 
     if (existing != null) {
@@ -71,8 +73,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
       id: const Uuid().v4(),
       userId: ref.read(currentUserIdProvider) ?? 'local-user',
       name: _nameController.text.trim(),
-      barcode:
-          _barcodeController.text.isEmpty ? null : _barcodeController.text,
+      barcode: _barcodeController.text.isEmpty ? null : _barcodeController.text,
       buyPrice: double.parse(_buyPriceController.text),
       sellPrice: double.parse(_sellPriceController.text),
       stockQty: int.parse(_stockController.text),
@@ -86,9 +87,8 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
       context.pop();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر إضافة المنتج: $e')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('تعذر إضافة المنتج: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -105,10 +105,24 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
           child: ListView(
             padding: const EdgeInsets.all(AppSizes.screenPadding),
             children: [
+              Text(
+                'معلومات المنتج',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: AppSizes.xs),
+              const Text(
+                'أدخل السعر والمخزون ليصبح المنتج جاهزاً لتسجيل البيع.',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: AppSizes.textSm,
+                ),
+              ),
+              const SizedBox(height: AppSizes.sectionGap),
               TextFormField(
                 controller: _nameController,
-                decoration:
-                    const InputDecoration(labelText: AppStrings.productName),
+                decoration: const InputDecoration(
+                  labelText: AppStrings.productName,
+                ),
                 validator: (v) =>
                     Validators.required(v, fieldName: AppStrings.productName),
               ),
@@ -119,8 +133,9 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                   Expanded(
                     child: TextFormField(
                       controller: _barcodeController,
-                      decoration:
-                          const InputDecoration(labelText: AppStrings.barcode),
+                      decoration: const InputDecoration(
+                        labelText: AppStrings.barcode,
+                      ),
                     ),
                   ),
                   const SizedBox(width: AppSizes.sm),
@@ -133,9 +148,11 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                       border: Border.all(color: AppColors.borderLight),
                     ),
                     child: IconButton(
-                      onPressed: _scanBarcode,
-                      icon: const Icon(Icons.qr_code_scanner_rounded,
-                          color: AppColors.primary),
+                      onPressed: _isLoading ? null : _scanBarcode,
+                      icon: const Icon(
+                        Icons.qr_code_scanner_rounded,
+                        color: AppColors.primary,
+                      ),
                       tooltip: AppStrings.scanBarcode,
                     ),
                   ),
@@ -149,9 +166,11 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                     child: TextFormField(
                       controller: _buyPriceController,
                       keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
-                      decoration:
-                          const InputDecoration(labelText: AppStrings.buyPrice),
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: AppStrings.buyPrice,
+                      ),
                       validator: Validators.amount,
                     ),
                   ),
@@ -160,9 +179,11 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                     child: TextFormField(
                       controller: _sellPriceController,
                       keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
+                        decimal: true,
+                      ),
                       decoration: const InputDecoration(
-                          labelText: AppStrings.sellPrice),
+                        labelText: AppStrings.sellPrice,
+                      ),
                       validator: Validators.amount,
                     ),
                   ),
@@ -176,8 +197,9 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                     child: TextFormField(
                       controller: _stockController,
                       keyboardType: TextInputType.number,
-                      decoration:
-                          const InputDecoration(labelText: AppStrings.stockQty),
+                      decoration: const InputDecoration(
+                        labelText: AppStrings.stockQty,
+                      ),
                       validator: Validators.quantity,
                     ),
                   ),
@@ -186,15 +208,16 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                     child: TextFormField(
                       controller: _minStockController,
                       keyboardType: TextInputType.number,
-                      decoration:
-                          const InputDecoration(labelText: AppStrings.minStock),
+                      decoration: const InputDecoration(
+                        labelText: AppStrings.minStock,
+                      ),
                       validator: Validators.quantity,
                     ),
                   ),
                 ],
               ),
 
-              const SizedBox(height: AppSizes.xl),
+              const SizedBox(height: AppSizes.sectionGap),
               AppButton(
                 label: AppStrings.save,
                 isLoading: _isLoading,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 
@@ -38,11 +39,11 @@ class AppButton extends StatelessWidget {
   Color get _textColor {
     switch (style) {
       case AppButtonStyle.primary:
-        return AppColors.background;
+        return AppColors.onPrimary;
       case AppButtonStyle.secondary:
         return AppColors.textPrimary;
       case AppButtonStyle.danger:
-        return AppColors.textPrimary;
+        return AppColors.onPrimary;
       case AppButtonStyle.outline:
         return AppColors.primary;
     }
@@ -59,6 +60,8 @@ class AppButton extends StatelessWidget {
           backgroundColor: _bgColor,
           foregroundColor: _textColor,
           elevation: 0,
+          disabledBackgroundColor: AppColors.surfaceLight,
+          disabledForegroundColor: AppColors.textHint,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
             side: style == AppButtonStyle.outline

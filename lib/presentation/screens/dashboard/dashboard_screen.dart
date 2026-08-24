@@ -11,6 +11,7 @@ import '../../../domain/entities/report.dart';
 import '../../../domain/entities/transaction.dart';
 import '../../providers/injection.dart';
 import '../../widgets/common/app_main_navigation.dart';
+import '../../widgets/common/app_state_view.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -42,10 +43,10 @@ class DashboardScreen extends ConsumerWidget {
               businessName: businessName,
             ),
           ),
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primary),
-          ),
-          error: (_, __) => _DashboardError(
+          loading: () => const AppLoadingState(label: 'جاري تحميل لوحة التحكم'),
+          error: (_, __) => AppErrorState(
+            title: 'تعذر تحميل لوحة التحكم',
+            description: 'أعد المحاولة لتحميل آخر ملخص للمتجر.',
             onRetry: () =>
                 ref.invalidate(dashboardOverviewProvider(currentUserId)),
           ),
@@ -59,10 +60,7 @@ class _DashboardContent extends StatelessWidget {
   final DashboardOverview overview;
   final String businessName;
 
-  const _DashboardContent({
-    required this.overview,
-    required this.businessName,
-  });
+  const _DashboardContent({required this.overview, required this.businessName});
 
   @override
   Widget build(BuildContext context) {
@@ -123,23 +121,21 @@ class _DashboardContent extends StatelessWidget {
           ),
           const SizedBox(height: AppSizes.sm),
           if (overview.totalDebt > 0)
-            _AttentionCard(
+            AppStatusBanner(
+              tone: AppStatusTone.warning,
               icon: Icons.account_balance_wallet_outlined,
-              color: AppColors.gold,
               title: 'مستحقات العملاء',
-              detail: CurrencyFormatter.format(overview.totalDebt),
-              actionLabel: 'عرض الزبائن',
+              description: CurrencyFormatter.format(overview.totalDebt),
               onTap: () => context.go('/customers'),
             ),
           if (overview.totalDebt > 0 && overview.lowStockCount > 0)
             const SizedBox(height: AppSizes.sm),
           if (overview.lowStockCount > 0)
-            _AttentionCard(
+            AppStatusBanner(
+              tone: AppStatusTone.warning,
               icon: Icons.inventory_2_outlined,
-              color: AppColors.warning,
               title: 'مخزون يحتاج تعبئة',
-              detail: '${overview.lowStockCount} منتجات منخفضة المخزون',
-              actionLabel: 'عرض المنتجات',
+              description: '${overview.lowStockCount} منتجات منخفضة المخزون',
               onTap: () => context.go('/products'),
             ),
         ],
@@ -156,8 +152,9 @@ class _DashboardContent extends StatelessWidget {
         if (overview.recentTransactions.isEmpty)
           const _EmptyActivity()
         else
-          ...overview.recentTransactions
-              .map((transaction) => _TransactionTile(transaction: transaction)),
+          ...overview.recentTransactions.map(
+            (transaction) => _TransactionTile(transaction: transaction),
+          ),
       ],
     );
   }
@@ -249,7 +246,8 @@ class _TodaySummary extends StatelessWidget {
         color: !hasActivity ? AppColors.surface : color.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(AppSizes.radiusXl),
         border: Border.all(
-            color: color.withValues(alpha: hasActivity ? 0.38 : 0.24)),
+          color: color.withValues(alpha: hasActivity ? 0.38 : 0.24),
+        ),
       ),
       child: Row(
         children: [
@@ -338,144 +336,15 @@ class _SecondaryAction extends StatelessWidget {
   }
 }
 
-class _AttentionCard extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String detail;
-  final String actionLabel;
-  final VoidCallback onTap;
-
-  const _AttentionCard({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.detail,
-    required this.actionLabel,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-      child: Container(
-        padding: const EdgeInsets.all(AppSizes.md),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-          border: Border.all(color: color.withValues(alpha: 0.28)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(9),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(AppSizes.radiusSm),
-              ),
-              child: Icon(icon, color: color, size: AppSizes.iconSm),
-            ),
-            const SizedBox(width: AppSizes.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    detail,
-                    style: const TextStyle(
-                      fontSize: AppSizes.textXs,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Text(
-              actionLabel,
-              style: TextStyle(
-                fontSize: AppSizes.textXs,
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
-            ),
-            const SizedBox(width: 2),
-            Icon(Icons.chevron_left_rounded, size: 18, color: color),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _EmptyActivity extends StatelessWidget {
   const _EmptyActivity();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.xl),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: const Column(
-        children: [
-          Icon(
-            Icons.receipt_long_outlined,
-            size: AppSizes.iconLg,
-            color: AppColors.textHint,
-          ),
-          SizedBox(height: AppSizes.sm),
-          Text(
-            'ابدأ بتسجيل أول بيع لتظهر حركة يومك هنا',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: AppSizes.textSm,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DashboardError extends StatelessWidget {
-  final VoidCallback onRetry;
-
-  const _DashboardError({required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(AppSizes.screenPadding),
-      children: [
-        const SizedBox(height: 140),
-        const Icon(
-          Icons.cloud_off_rounded,
-          color: AppColors.textSecondary,
-          size: AppSizes.iconLg,
-        ),
-        const SizedBox(height: AppSizes.md),
-        const Center(child: Text('تعذر تحميل بيانات لوحة التحكم')),
-        const SizedBox(height: AppSizes.sm),
-        Center(
-          child: TextButton(
-              onPressed: onRetry, child: const Text(AppStrings.retry)),
-        ),
-      ],
+    return const AppEmptyState(
+      icon: Icons.receipt_long_outlined,
+      title: 'لا توجد حركة اليوم بعد',
+      description: 'ابدأ بتسجيل أول بيع لتظهر حركة يومك هنا.',
     );
   }
 }
@@ -505,8 +374,9 @@ class _TransactionTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: (isSale ? AppColors.success : AppColors.danger)
-                  .withValues(alpha: 0.12),
+              color: (isSale ? AppColors.success : AppColors.danger).withValues(
+                alpha: 0.12,
+              ),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -544,8 +414,10 @@ class _TransactionTile extends StatelessWidget {
             ),
           ),
           Text(
-            CurrencyFormatter.formatSigned(transaction.amount,
-                isIncome: isSale),
+            CurrencyFormatter.formatSigned(
+              transaction.amount,
+              isIncome: isSale,
+            ),
             style: TextStyle(
               fontSize: AppSizes.textSm,
               fontWeight: FontWeight.w800,

@@ -7,8 +7,10 @@ import '../../data/local/daos/product_dao.dart';
 import '../../data/local/daos/customer_dao.dart';
 import '../../data/local/daos/user_dao.dart';
 import '../../data/local/daos/exchange_rate_dao.dart';
+import '../../data/local/daos/sync_dao.dart';
 import '../../data/remote/api_client.dart';
 import '../../data/remote/sync_service.dart';
+import '../../data/remote/sync_coordinator.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/transaction_repository_impl.dart';
 import '../../data/repositories/product_repository_impl.dart';
@@ -68,6 +70,10 @@ final exchangeRateDaoProvider = Provider<ExchangeRateDao>((ref) {
   return ExchangeRateDao(ref.watch(appDatabaseProvider));
 });
 
+final syncDaoProvider = Provider<SyncDao>((ref) {
+  return SyncDao(ref.watch(appDatabaseProvider));
+});
+
 // ===== الشبكة =====
 final apiClientProvider = Provider<ApiClient>((ref) {
   return ApiClient();
@@ -86,6 +92,13 @@ final syncServiceProvider = Provider<SyncService>((ref) {
     transactionDao: ref.watch(transactionDaoProvider),
     apiClient: ref.watch(apiClientProvider),
     connectivity: ref.watch(connectivityProvider),
+  );
+});
+
+final syncCoordinatorProvider = Provider<SyncCoordinator>((ref) {
+  return SyncCoordinator(
+    apiClient: ref.watch(apiClientProvider),
+    syncDao: ref.watch(syncDaoProvider),
   );
 });
 

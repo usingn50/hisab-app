@@ -98,6 +98,48 @@ class CreditProfiles extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+class SyncScopes extends Table {
+  TextColumn get organizationId => text()();
+  TextColumn get deviceId => text()();
+  TextColumn get lastPullCursor => text().withDefault(const Constant('0'))();
+  TextColumn get bootstrapState => text().withDefault(const Constant('idle'))();
+  DateTimeColumn get lastSuccessAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {organizationId};
+}
+
+class SyncOutbox extends Table {
+  TextColumn get mutationId => text()();
+  TextColumn get organizationId => text()();
+  TextColumn get entityType => text()();
+  TextColumn get operation => text()();
+  TextColumn get entityId => text()();
+  TextColumn get payloadJson => text()();
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+  IntColumn get attemptCount => integer().withDefault(const Constant(0))();
+  DateTimeColumn get nextAttemptAt => dateTime().nullable()();
+  TextColumn get lastError => text().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {mutationId};
+}
+
+class SyncConflicts extends Table {
+  TextColumn get mutationId => text()();
+  TextColumn get entityId => text()();
+  TextColumn get localPayloadJson => text()();
+  TextColumn get serverPayloadJson => text().nullable()();
+  TextColumn get reason => text()();
+  TextColumn get status => text().withDefault(const Constant('open'))();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {mutationId};
+}
+
 @DriftDatabase(
   tables: [
     Users,
@@ -106,13 +148,16 @@ class CreditProfiles extends Table {
     Transactions,
     ExchangeRates,
     CreditProfiles,
+    SyncScopes,
+    SyncOutbox,
+    SyncConflicts,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -124,6 +169,11 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(transactions, transactions.exchangeRate);
             await m.addColumn(transactions, transactions.baseAmount);
             await m.createTable(exchangeRates);
+          }
+          if (from < 3) {
+            await m.createTable(syncScopes);
+            await m.createTable(syncOutbox);
+            await m.createTable(syncConflicts);
           }
         },
       );

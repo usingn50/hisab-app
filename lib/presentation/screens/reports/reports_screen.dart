@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_strings.dart';
@@ -10,6 +11,7 @@ import '../../../core/utils/date_formatter.dart';
 import '../../../domain/entities/report.dart';
 import '../../providers/injection.dart';
 import '../../widgets/common/app_main_navigation.dart';
+import '../../widgets/common/app_state_view.dart';
 
 /// تقرير اليوم الحالي
 final _todayReportProvider = FutureProvider.autoDispose<Report>((ref) async {
@@ -19,8 +21,9 @@ final _todayReportProvider = FutureProvider.autoDispose<Report>((ref) async {
 });
 
 /// تقارير آخر 7 أيام — لرسم المخطط البياني
-final _weekReportsProvider =
-    FutureProvider.autoDispose<List<Report>>((ref) async {
+final _weekReportsProvider = FutureProvider.autoDispose<List<Report>>((
+  ref,
+) async {
   final userId = ref.watch(currentUserIdProvider) ?? 'local-user';
   final getDailyReport = ref.watch(getDailyReportProvider);
   final now = DateTime.now();
@@ -67,20 +70,32 @@ class ReportsScreen extends ConsumerWidget {
           onRefresh: () async {
             ref.invalidate(_todayReportProvider);
             ref.invalidate(_weekReportsProvider);
+            await Future.wait([
+              ref.read(_todayReportProvider.future),
+              ref.read(_weekReportsProvider.future),
+            ]);
           },
           child: ListView(
             padding: const EdgeInsets.all(AppSizes.screenPadding),
             children: [
-              Text(DateFormatter.formatFull(DateTime.now()),
-                  style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: AppSizes.textSm)),
+              Text(
+                DateFormatter.formatFull(DateTime.now()),
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: AppSizes.textSm,
+                ),
+              ),
               const SizedBox(height: AppSizes.md),
               todayAsync.when(
                 data: (report) => _TodaySummary(report: report),
-                loading: () => const _SummarySkeleton(),
-                error: (e, _) => const Text('تعذر تحميل التقرير',
-                    style: TextStyle(color: AppColors.danger)),
+                loading: () => const SizedBox(
+                  height: 180,
+                  child: AppLoadingState(label: 'جاري تحميل ملخص اليوم'),
+                ),
+                error: (_, __) => AppErrorState(
+                  description: 'تعذر تحميل ملخص اليوم. أعد المحاولة للمتابعة.',
+                  onRetry: () => ref.invalidate(_todayReportProvider),
+                ),
               ),
               const SizedBox(height: AppSizes.xl),
               const Text(
@@ -96,12 +111,13 @@ class ReportsScreen extends ConsumerWidget {
                 data: (reports) => _WeekChart(reports: reports),
                 loading: () => const SizedBox(
                   height: 200,
-                  child: Center(
-                      child:
-                          CircularProgressIndicator(color: AppColors.primary)),
+                  child: AppLoadingState(label: 'جاري تحميل المخطط'),
                 ),
-                error: (e, _) => const Text('تعذر تحميل المخطط',
-                    style: TextStyle(color: AppColors.danger)),
+                error: (_, __) => AppErrorState(
+                  title: 'تعذر تحميل المخطط',
+                  description: 'أعد المحاولة لعرض نتائج الأيام السبعة الأخيرة.',
+                  onRetry: () => ref.invalidate(_weekReportsProvider),
+                ),
               ),
               const SizedBox(height: AppSizes.xxl),
             ],
@@ -118,10 +134,13 @@ class ReportsScreen extends ConsumerWidget {
         content: Row(
           children: [
             SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: AppColors.textPrimary)),
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.textPrimary,
+              ),
+            ),
             SizedBox(width: 12),
             Text('جاري تجهيز التقرير...'),
           ],
@@ -153,7 +172,19 @@ class _TodaySummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isEmpty = report.revenue == 0 && report.expenses == 0;
+    final hasActivity = report.revenue != 0 || report.expenses != 0;
+    final isNeutral = report.profit == 0;
+    final colors = isNeutral
+        ? const [AppColors.surfaceElevated, AppColors.surface]
+        : report.profit > 0
+        ? const [AppColors.success, AppColors.successLight]
+        : const [AppColors.danger, Color(0xFFB91C1C)];
+    final title = isNeutral ? 'نتيجة اليوم' : AppStrings.profit;
+    final subtitle = !hasActivity
+        ? 'لا توجد عمليات اليوم بعد'
+        : isNeutral
+        ? 'تعادلت الإيرادات والمصروفات اليوم'
+        : 'هامش ربح ${report.profitMargin.toStringAsFixed(0)}%';
 
     return Column(
       children: [
@@ -162,11 +193,7 @@ class _TodaySummary extends StatelessWidget {
           padding: const EdgeInsets.all(AppSizes.lg),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: isEmpty
-                  ? [AppColors.surfaceLight, AppColors.surface]
-                  : report.isProfitable
-                      ? [AppColors.success, AppColors.successLight]
-                      : [AppColors.danger, const Color(0xFFB91C1C)],
+              colors: colors,
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
             ),
@@ -175,24 +202,29 @@ class _TodaySummary extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(AppStrings.profit,
-                  style: TextStyle(
-                      color: Colors.white70, fontSize: AppSizes.textSm)),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: AppSizes.textSm,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 CurrencyFormatter.format(report.profit),
                 style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: AppSizes.textDisplay,
-                    fontWeight: FontWeight.w900),
+                  color: Colors.white,
+                  fontSize: AppSizes.textDisplay,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
-                report.revenue == 0
-                    ? 'لا توجد عمليات اليوم بعد'
-                    : 'هامش ربح ${report.profitMargin.toStringAsFixed(0)}%',
+                subtitle,
                 style: const TextStyle(
-                    color: Colors.white70, fontSize: AppSizes.textXs),
+                  color: Colors.white70,
+                  fontSize: AppSizes.textXs,
+                ),
               ),
             ],
           ),
@@ -239,6 +271,8 @@ class _StatBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = value == 0 ? AppColors.textSecondary : color;
+
     return Container(
       padding: const EdgeInsets.all(AppSizes.md),
       decoration: BoxDecoration(
@@ -248,38 +282,26 @@ class _StatBox extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: AppSizes.iconSm),
+          Icon(icon, color: effectiveColor, size: AppSizes.iconSm),
           const SizedBox(height: 6),
-          Text(label,
-              style: const TextStyle(
-                  fontSize: AppSizes.textXs, color: AppColors.textSecondary)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: AppSizes.textXs,
+              color: AppColors.textSecondary,
+            ),
+          ),
           const SizedBox(height: 2),
           Text(
             CurrencyFormatter.formatNumberOnly(value),
             style: const TextStyle(
-                fontSize: AppSizes.textMd,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary),
+              fontSize: AppSizes.textMd,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _SummarySkeleton extends StatelessWidget {
-  const _SummarySkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 140,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
-      ),
-      child: const Center(
-          child: CircularProgressIndicator(color: AppColors.primary)),
     );
   }
 }
@@ -291,15 +313,10 @@ class _WeekChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (reports.every((r) => r.revenue == 0 && r.expenses == 0)) {
-      return Container(
-        height: 180,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-        ),
-        child: const Text('لا توجد بيانات كافية بعد',
-            style: TextStyle(color: AppColors.textSecondary)),
+      return const AppEmptyState(
+        icon: Icons.bar_chart_outlined,
+        title: 'لا توجد بيانات كافية بعد',
+        description: 'سجّل عملياتك اليومية لتظهر مؤشرات الأيام السبعة الأخيرة.',
       );
     }
 
@@ -309,8 +326,12 @@ class _WeekChart extends StatelessWidget {
 
     return Container(
       height: 220,
-      padding:
-          const EdgeInsets.fromLTRB(8, AppSizes.md, AppSizes.md, AppSizes.sm),
+      padding: const EdgeInsets.fromLTRB(
+        8,
+        AppSizes.md,
+        AppSizes.md,
+        AppSizes.sm,
+      ),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
@@ -321,12 +342,15 @@ class _WeekChart extends StatelessWidget {
           gridData: const FlGridData(show: false),
           borderData: FlBorderData(show: false),
           titlesData: FlTitlesData(
-            leftTitles:
-                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles:
-                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles:
-                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            leftTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
@@ -339,7 +363,9 @@ class _WeekChart extends StatelessWidget {
                     child: Text(
                       DateFormatter.formatRelative(day),
                       style: const TextStyle(
-                          fontSize: 9, color: AppColors.textSecondary),
+                        fontSize: 9,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   );
                 },
@@ -353,7 +379,11 @@ class _WeekChart extends StatelessWidget {
               barRods: [
                 BarChartRodData(
                   toY: r.profit.abs(),
-                  color: r.isProfitable ? AppColors.success : AppColors.danger,
+                  color: r.profit == 0
+                      ? AppColors.textSecondary
+                      : r.profit > 0
+                      ? AppColors.success
+                      : AppColors.danger,
                   width: 16,
                   borderRadius: BorderRadius.circular(4),
                 ),

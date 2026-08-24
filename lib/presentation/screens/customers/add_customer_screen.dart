@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_strings.dart';
@@ -9,6 +10,7 @@ import '../../../core/utils/validators.dart';
 import '../../../domain/entities/customer.dart';
 import '../../providers/injection.dart';
 import '../../widgets/common/app_button.dart';
+import '../../widgets/common/app_state_view.dart';
 
 /// شاشة إضافة زبون جديد لدفتر الديون.
 class AddCustomerScreen extends ConsumerStatefulWidget {
@@ -40,9 +42,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
       id: const Uuid().v4(),
       userId: ref.read(currentUserIdProvider) ?? 'local-user',
       name: _nameController.text.trim(),
-      phone: _phoneController.text.isEmpty
-          ? null
-          : '7${_phoneController.text}',
+      phone: _phoneController.text.isEmpty ? null : '7${_phoneController.text}',
       createdAt: DateTime.now(),
     );
 
@@ -52,9 +52,8 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
       context.pop();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر إضافة الزبون: $e')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('تعذر إضافة الزبون: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -71,10 +70,24 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
           child: ListView(
             padding: const EdgeInsets.all(AppSizes.screenPadding),
             children: [
+              Text(
+                'بيانات الزبون',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: AppSizes.xs),
+              const Text(
+                'أضف بياناته الأساسية لتتابع الرصيد والدفعات بسهولة.',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: AppSizes.textSm,
+                ),
+              ),
+              const SizedBox(height: AppSizes.sectionGap),
               TextFormField(
                 controller: _nameController,
-                decoration:
-                    const InputDecoration(labelText: AppStrings.customerName),
+                decoration: const InputDecoration(
+                  labelText: AppStrings.customerName,
+                ),
                 validator: (v) =>
                     Validators.required(v, fieldName: AppStrings.customerName),
               ),
@@ -84,18 +97,22 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                 children: [
                   Container(
                     height: AppSizes.inputHeight,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: AppSizes.md),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.md,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                       border: Border.all(color: AppColors.borderLight),
                     ),
                     child: const Center(
-                      child: Text('+967',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary)),
+                      child: Text(
+                        '+967',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: AppSizes.sm),
@@ -103,44 +120,29 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
                     child: TextFormField(
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
+                      textDirection: TextDirection.ltr,
+                      autofillHints: const [AutofillHints.telephoneNumber],
                       maxLength: 9,
                       decoration: const InputDecoration(
                         labelText: AppStrings.phone,
                         hintText: AppStrings.phoneHint,
                         counterText: '',
                       ),
-                      // اختياري — لا يوجد تحقق إجباري لأن بعض الزبائن
-                      // قد لا يمتلكون هاتفاً مسجلاً لدى صاحب المحل
                     ),
                   ),
                 ],
               ),
 
               const SizedBox(height: AppSizes.md),
-              Container(
-                padding: const EdgeInsets.all(AppSizes.md),
-                decoration: BoxDecoration(
-                  color: AppColors.info.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.info_outline_rounded,
-                        color: AppColors.info, size: AppSizes.iconSm),
-                    SizedBox(width: AppSizes.sm),
-                    Expanded(
-                      child: Text(
-                        'إضافة رقم الهاتف تتيح إرسال تذكير واتساب تلقائياً عند وجود دين',
-                        style: TextStyle(
-                            fontSize: AppSizes.textXs,
-                            color: AppColors.textSecondary),
-                      ),
-                    ),
-                  ],
-                ),
+              const AppStatusBanner(
+                tone: AppStatusTone.info,
+                icon: Icons.info_outline_rounded,
+                title: 'رقم الهاتف اختياري',
+                description:
+                    'إضافته تتيح إرسال تذكير واتساب عند وجود رصيد مستحق.',
               ),
 
-              const SizedBox(height: AppSizes.xl),
+              const SizedBox(height: AppSizes.sectionGap),
               AppButton(
                 label: AppStrings.save,
                 isLoading: _isLoading,

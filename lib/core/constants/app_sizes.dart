@@ -1,7 +1,6 @@
 class AppSizes {
   AppSizes._();
 
-  // الهوامش
   static const double xs = 4.0;
   static const double sm = 8.0;
   static const double md = 16.0;
@@ -9,14 +8,18 @@ class AppSizes {
   static const double xl = 32.0;
   static const double xxl = 48.0;
 
-  // نصف قطر الحواف
+  static const double screenPadding = 20.0;
+  static const double screenPaddingLarge = 24.0;
+  static const double sectionGap = 24.0;
+  static const double contentGap = 16.0;
+  static const double itemGap = 12.0;
+
   static const double radiusSm = 8.0;
   static const double radiusMd = 12.0;
   static const double radiusLg = 16.0;
   static const double radiusXl = 24.0;
   static const double radiusFull = 100.0;
 
-  // أحجام الخطوط
   static const double textXs = 11.0;
   static const double textSm = 13.0;
   static const double textMd = 15.0;
@@ -25,13 +28,10 @@ class AppSizes {
   static const double textXxl = 28.0;
   static const double textDisplay = 36.0;
 
-  // ارتفاع العناصر
+  static const double touchTarget = 48.0;
   static const double buttonHeight = 52.0;
   static const double inputHeight = 52.0;
   static const double iconSm = 18.0;
   static const double iconMd = 24.0;
   static const double iconLg = 32.0;
-
-  // حدود الشاشة
-  static const double screenPadding = 20.0;
 }
