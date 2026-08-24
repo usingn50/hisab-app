@@ -52,6 +52,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   }
 
   Future<void> _verify() async {
+    if (_isLoading) return;
     if (_otpController.text.length != 6) {
       setState(() => _errorText = 'الرجاء إدخال 6 أرقام كاملة');
       return;
@@ -92,9 +93,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   Future<void> _resend() async {
     if (_secondsLeft > 0) return;
     _startTimer();
-    final result = await ref
-        .read(authRepositoryProvider)
-        .sendOtp(widget.phone);
+    final result = await ref.read(authRepositoryProvider).sendOtp(widget.phone);
     if (!mounted) return;
     switch (result) {
       case SendOtpSuccess():
@@ -114,6 +113,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDevelopmentMode =
+        ref.watch(authRepositoryProvider).isDevelopmentMode;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -145,39 +147,56 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 ),
               ),
               const SizedBox(height: AppSizes.md),
-
-              // وضع التطوير — يُخفى تلقائياً عند تفعيل الـ Backend
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.md, vertical: 10),
-                decoration: BoxDecoration(
-                  color: AppColors.gold.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                  border: Border.all(
-                      color: AppColors.gold.withValues(alpha: 0.25)),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.developer_mode_rounded,
-                        size: 16, color: AppColors.gold),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'وضع التطوير — استخدم الرمز: 123456',
-                        style: TextStyle(
-                            fontSize: AppSizes.textXs,
-                            color: AppColors.goldLight),
-                      ),
+              if (isDevelopmentMode) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.md,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.gold.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                    border: Border.all(
+                      color: AppColors.gold.withValues(alpha: 0.25),
                     ),
-                  ],
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.developer_mode_rounded,
+                        size: 16,
+                        color: AppColors.gold,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'وضع التطوير — استخدم الرمز: 123456',
+                          style: TextStyle(
+                            fontSize: AppSizes.textXs,
+                            color: AppColors.goldLight,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-
-              const SizedBox(height: AppSizes.lg),
-
+                const SizedBox(height: AppSizes.lg),
+              ] else ...[
+                const Text(
+                  'أدخل الرمز المكوّن من 6 أرقام كما وصلك في الرسالة.',
+                  style: TextStyle(
+                    fontSize: AppSizes.textSm,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: AppSizes.lg),
+              ],
               TextField(
                 controller: _otpController,
+                autofocus: true,
+                autofillHints: const [AutofillHints.oneTimeCode],
                 keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
                 maxLength: 6,
                 textAlign: TextAlign.center,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -192,13 +211,13 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   errorText: _errorText,
                   hintText: '······',
                 ),
-                onChanged: (_) {
+                onChanged: (value) {
                   if (_errorText != null) setState(() => _errorText = null);
+                  if (value.length == 6) _verify();
                 },
+                onSubmitted: (_) => _verify(),
               ),
-
               const SizedBox(height: AppSizes.lg),
-
               Center(
                 child: TextButton(
                   onPressed: _secondsLeft == 0 ? _resend : null,
@@ -214,7 +233,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: AppSizes.lg),
               AppButton(
                 label: AppStrings.verify,

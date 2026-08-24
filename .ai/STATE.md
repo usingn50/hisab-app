@@ -1,30 +1,32 @@
 # STATE
 
 Current task: UX operational-flow improvement batch
-Progress: complete locally; awaiting commit and push
+Progress: complete locally; awaiting commit and push of the extended batch
 
 Last completed work:
-- Added a reusable Arabic search field with a visible clear action and accessibility label.
-- Added search, result states, and low-stock filtering to the inventory screen.
-- Added search plus outstanding/overdue filters to the debt book.
-- Improved product entry with Yemeni-rial suffixes, stock guidance, and a live per-unit margin preview.
-- Improved sale entry with foreign-currency conversion feedback and payment-specific confirmation labels.
+- Added reusable Arabic search and currency-conversion components.
+- Added search, filters, empty-result recovery, and action-oriented alerts to inventory and debt workflows.
+- Added price-margin guidance to product entry and base-currency conversion feedback to sale and expense entry.
+- Made confirmation labels describe the merchant action being saved.
+- Made the OTP development hint conditional on the auth mode, and added one-time-code autofill plus automatic verification after six digits.
+- Expanded settings into business, local-data, currency, and session sections without presenting inactive sync or backup capabilities as live.
 
 Validation completed in this environment:
 - `flutter analyze` passed.
 - `flutter test` passed.
 - `flutter build web --release --no-wasm-dry-run` passed.
+- Browser preview reaches the authenticated dashboard route after the latest build.
 
 Next UX priorities:
-1. Expand settings into clear business, data, security, and support sections without presenting unavailable cloud features as active.
-2. Improve the production OTP experience only after the deployed API contract replaces development authentication.
-3. Add period controls and per-currency breakdowns to financial reports after the reporting data layer exposes the required aggregation.
+1. Add report-period controls and per-currency breakdowns once reporting aggregation supports them.
+2. Complete secure production authentication and session storage only after deployed API contracts align with the Flutter client.
+3. Add customer payment entry and product detail/edit flows before presenting those actions in list tiles.
 4. Run device-level usability checks for barcode scanning, PDF sharing, keyboard behavior, and accessibility.
 
 SafeToContinue: true
 
 ## Architecture guardrails
-- Keep `success` green separate from the blue brand primary; profit/loss semantics must remain clear.
+- Keep `success` green separate from the blue brand primary; profit and loss semantics must remain clear.
 - `userId` is currently the phone-number string; do not assume a backend UUID until live API authentication is integrated.
 - Local Drift data remains on device after logout by design.
 - `AuthRepository._backendEnabled` remains false until the Node API is deployed and client contracts are aligned.

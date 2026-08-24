@@ -11,6 +11,7 @@ import '../../../domain/entities/customer.dart';
 import '../../../domain/entities/transaction.dart';
 import '../../providers/injection.dart';
 import '../../widgets/common/app_button.dart';
+import '../../widgets/common/app_currency_conversion_hint.dart';
 
 final _userProductsProvider = FutureProvider<List<Product>>((ref) async {
   final userId = ref.watch(currentUserIdProvider) ?? 'local-user';
@@ -273,7 +274,7 @@ class _AddSaleScreenState extends ConsumerState<AddSaleScreen> {
                   _amount != null &&
                   _exchangeRate != null) ...[
                 const SizedBox(height: AppSizes.sm),
-                _CurrencyConversionHint(
+                AppCurrencyConversionHint(
                   amount: _amount!,
                   exchangeRate: _exchangeRate!,
                 ),
@@ -337,39 +338,6 @@ class _AddSaleScreenState extends ConsumerState<AddSaleScreen> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CurrencyConversionHint extends StatelessWidget {
-  final double amount;
-  final double exchangeRate;
-
-  const _CurrencyConversionHint({
-    required this.amount,
-    required this.exchangeRate,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final baseAmount = amount * exchangeRate;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.md,
-        vertical: AppSizes.sm,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.info.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-      ),
-      child: Text(
-        'يعادل تقريباً ${baseAmount.toStringAsFixed(0)} ر.ي بسعر الصرف المدخل.',
-        style: const TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: AppSizes.textXs,
         ),
       ),
     );

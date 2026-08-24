@@ -8,6 +8,7 @@ import '../../../core/utils/validators.dart';
 import '../../../domain/entities/currency.dart';
 import '../../providers/injection.dart';
 import '../../widgets/common/app_button.dart';
+import '../../widgets/common/app_currency_conversion_hint.dart';
 
 /// فئات المصاريف الشائعة لدى أصحاب المحلات اليمنية — تسريع الإدخال.
 const _expenseCategories = [
@@ -43,6 +44,10 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     _exchangeRateController.dispose();
     super.dispose();
   }
+
+  double? get _amount => double.tryParse(_amountController.text);
+
+  double? get _exchangeRate => double.tryParse(_exchangeRateController.text);
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -102,6 +107,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   suffixText: _currency.symbol,
                 ),
                 validator: Validators.amount,
+                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: AppSizes.md),
               DropdownButtonFormField<CurrencyCode>(
@@ -129,7 +135,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                 const SizedBox(height: AppSizes.md),
                 TextFormField(
                   controller: _exchangeRateController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(
                     labelText: 'سعر الصرف إلى الريال اليمني',
                     suffixText: 'ر.ي',
@@ -140,7 +147,15 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                         ? 'أدخل سعر صرف صحيحاً'
                         : null;
                   },
+                  onChanged: (_) => setState(() {}),
                 ),
+                if (_amount != null && _exchangeRate != null) ...[
+                  const SizedBox(height: AppSizes.sm),
+                  AppCurrencyConversionHint(
+                    amount: _amount!,
+                    exchangeRate: _exchangeRate!,
+                  ),
+                ],
               ],
               const SizedBox(height: AppSizes.lg),
               Text('نوع المصروف',
@@ -176,7 +191,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
               ),
               const SizedBox(height: AppSizes.xl),
               AppButton(
-                label: AppStrings.save,
+                label: 'تسجيل المصروف',
                 style: AppButtonStyle.danger,
                 isLoading: formState.isLoading,
                 onPressed: _submit,

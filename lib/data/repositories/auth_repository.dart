@@ -48,6 +48,8 @@ class AuthRepository {
 
   AuthRepository(this._api);
 
+  bool get isDevelopmentMode => !_backendEnabled;
+
   Future<SendOtpResult> sendOtp(String phone) async {
     if (!_backendEnabled) {
       // محاكاة: تأخير 600ms لمحاكاة الشبكة
@@ -59,7 +61,8 @@ class AuthRepository {
       await _api.sendOtp(phone);
       return const SendOtpSuccess();
     } on DioException catch (e) {
-      return SendOtpFailure(_extractMessage(e, fallback: 'تعذر إرسال رمز التحقق'));
+      return SendOtpFailure(
+          _extractMessage(e, fallback: 'تعذر إرسال رمز التحقق'));
     } catch (_) {
       return const SendOtpFailure('خطأ غير متوقع، حاول مرة أخرى');
     }
@@ -72,7 +75,8 @@ class AuthRepository {
         final userId = await SessionService.saveSession(phone);
         return VerifyOtpSuccess(userId);
       }
-      return const VerifyOtpFailure('الرمز غير صحيح — استخدم 123456 في وضع التطوير');
+      return const VerifyOtpFailure(
+          'الرمز غير صحيح — استخدم 123456 في وضع التطوير');
     }
 
     try {
@@ -88,9 +92,11 @@ class AuthRepository {
         return const VerifyOtpFailure('رمز التحقق غير صحيح أو منتهي الصلاحية');
       }
       if (status == 429) {
-        return const VerifyOtpFailure('محاولات كثيرة — انتظر دقيقة وحاول مجدداً');
+        return const VerifyOtpFailure(
+            'محاولات كثيرة — انتظر دقيقة وحاول مجدداً');
       }
-      return VerifyOtpFailure(_extractMessage(e, fallback: 'تعذر التحقق من الرمز'));
+      return VerifyOtpFailure(
+          _extractMessage(e, fallback: 'تعذر التحقق من الرمز'));
     } catch (_) {
       return const VerifyOtpFailure('خطأ غير متوقع، حاول مرة أخرى');
     }
