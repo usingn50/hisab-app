@@ -68,6 +68,10 @@ class _AddSaleScreenState extends ConsumerState<AddSaleScreen> {
         (_selectedProduct!.sellPrice * qty).toStringAsFixed(0);
   }
 
+  double? get _amount => double.tryParse(_amountController.text);
+
+  double? get _exchangeRate => double.tryParse(_exchangeRateController.text);
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedProduct == null) {
@@ -175,7 +179,8 @@ class _AddSaleScreenState extends ConsumerState<AddSaleScreen> {
                 const SizedBox(height: AppSizes.md),
                 TextFormField(
                   controller: _exchangeRateController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(
                     labelText: 'سعر الصرف إلى الريال اليمني',
                     suffixText: 'ر.ي',
@@ -186,6 +191,7 @@ class _AddSaleScreenState extends ConsumerState<AddSaleScreen> {
                         ? 'أدخل سعر صرف صحيحاً'
                         : null;
                   },
+                  onChanged: (_) => setState(() {}),
                 ),
                 const SizedBox(height: AppSizes.xs),
                 const Text(
@@ -258,10 +264,20 @@ class _AddSaleScreenState extends ConsumerState<AddSaleScreen> {
                         suffixText: _currency.symbol,
                       ),
                       validator: Validators.amount,
+                      onChanged: (_) => setState(() {}),
                     ),
                   ),
                 ],
               ),
+              if (_currency != CurrencyCode.yer &&
+                  _amount != null &&
+                  _exchangeRate != null) ...[
+                const SizedBox(height: AppSizes.sm),
+                _CurrencyConversionHint(
+                  amount: _amount!,
+                  exchangeRate: _exchangeRate!,
+                ),
+              ],
 
               const SizedBox(height: AppSizes.md),
 
@@ -313,12 +329,47 @@ class _AddSaleScreenState extends ConsumerState<AddSaleScreen> {
 
               const SizedBox(height: AppSizes.xl),
               AppButton(
-                label: AppStrings.save,
+                label: _payment == PaymentMethod.cash
+                    ? 'تأكيد البيع النقدي'
+                    : 'تأكيد البيع الآجل',
                 isLoading: formState.isLoading,
                 onPressed: _submit,
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CurrencyConversionHint extends StatelessWidget {
+  final double amount;
+  final double exchangeRate;
+
+  const _CurrencyConversionHint({
+    required this.amount,
+    required this.exchangeRate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final baseAmount = amount * exchangeRate;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.md,
+        vertical: AppSizes.sm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.info.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+      ),
+      child: Text(
+        'يعادل تقريباً ${baseAmount.toStringAsFixed(0)} ر.ي بسعر الصرف المدخل.',
+        style: const TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: AppSizes.textXs,
         ),
       ),
     );

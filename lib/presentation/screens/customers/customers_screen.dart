@@ -10,6 +10,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../domain/entities/customer.dart';
 import '../../providers/injection.dart';
 import '../../widgets/common/app_main_navigation.dart';
+import '../../widgets/common/app_search_field.dart';
 import '../../widgets/common/app_state_view.dart';
 
 final customersListProvider = FutureProvider.autoDispose<List<Customer>>((
@@ -19,8 +20,25 @@ final customersListProvider = FutureProvider.autoDispose<List<Customer>>((
   return ref.watch(customerRepositoryProvider).getAll(userId);
 });
 
-class CustomersScreen extends ConsumerWidget {
+enum _CustomerFilter { all, outstanding, overdue }
+
+class CustomersScreen extends ConsumerStatefulWidget {
   const CustomersScreen({super.key});
+
+  @override
+  ConsumerState<CustomersScreen> createState() => _CustomersScreenState();
+}
+
+class _CustomersScreenState extends ConsumerState<CustomersScreen> {
+  final _searchController = TextEditingController();
+  _CustomerFilter _filter = _CustomerFilter.all;
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   Future<void> _sendWhatsAppReminder(Customer customer) async {
     if (customer.phone == null || customer.phone!.isEmpty) return;
@@ -38,13 +56,36 @@ class CustomersScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _refresh(WidgetRef ref) async {
+  Future<void> _refresh() async {
     ref.invalidate(customersListProvider);
     await ref.read(customersListProvider.future);
   }
 
+  void _resetFilters() {
+    setState(() {
+      _searchController.clear();
+      _query = '';
+      _filter = _CustomerFilter.all;
+    });
+  }
+
+  bool _matchesQuery(Customer customer) {
+    if (_query.isEmpty) return true;
+    final query = _query.toLowerCase();
+    return customer.name.toLowerCase().contains(query) ||
+        (customer.phone?.contains(query) ?? false);
+  }
+
+  bool _matchesFilter(Customer customer) {
+    return switch (_filter) {
+      _CustomerFilter.all => true,
+      _CustomerFilter.outstanding => customer.hasDebt,
+      _CustomerFilter.overdue => customer.isOverdue,
+    };
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final customersAsync = ref.watch(customersListProvider);
 
     return Scaffold(
@@ -78,41 +119,106 @@ class CustomersScreen extends ConsumerWidget {
               0,
               (sum, customer) => sum + customer.totalDebt,
             );
+            final outstandingCount = customers.where((c) => c.hasDebt).length;
             final overdueCount = customers.where((c) => c.isOverdue).length;
-            final sorted = [...customers]
-              ..sort((a, b) {
+            final sorted = [...customers]..sort((a, b) {
                 if (a.isOverdue != b.isOverdue) {
                   return a.isOverdue ? -1 : 1;
                 }
                 return b.totalDebt.compareTo(a.totalDebt);
               });
+            final filtered =
+                sorted.where(_matchesQuery).where(_matchesFilter).toList();
 
             return RefreshIndicator(
               color: AppColors.primary,
-              onRefresh: () => _refresh(ref),
-              child: ListView(
-                padding: const EdgeInsets.all(AppSizes.screenPadding),
-                children: [
-                  _DebtSummary(totalDebt: totalDebt),
-                  if (overdueCount > 0) ...[
-                    const SizedBox(height: AppSizes.contentGap),
-                    AppStatusBanner(
-                      tone: AppStatusTone.warning,
-                      icon: Icons.schedule_rounded,
-                      title: '$overdueCount زبون متأخر أكثر من 30 يوماً',
-                      description: 'تواصل معهم لتحديث الرصيد أو تسجيل دفعة.',
+              onRefresh: _refresh,
+              child: filtered.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(AppSizes.screenPadding),
+                      children: [
+                        _DebtSummary(
+                          totalDebt: totalDebt,
+                          customersCount: customers.length,
+                          overdueCount: overdueCount,
+                        ),
+                        const SizedBox(height: AppSizes.md),
+                        _CustomerControls(
+                          controller: _searchController,
+                          filter: _filter,
+                          allCount: customers.length,
+                          outstandingCount: outstandingCount,
+                          overdueCount: overdueCount,
+                          onSearchChanged: (value) =>
+                              setState(() => _query = value.trim()),
+                          onFilterChanged: (filter) =>
+                              setState(() => _filter = filter),
+                        ),
+                        const SizedBox(height: AppSizes.xxl),
+                        AppEmptyState(
+                          icon: Icons.search_off_rounded,
+                          title: 'لا توجد نتائج مطابقة',
+                          description: 'جرّب اسمًا آخر أو اعرض كل الزبائن.',
+                          actionLabel: 'إظهار كل الزبائن',
+                          onAction: _resetFilters,
+                        ),
+                      ],
+                    )
+                  : ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(AppSizes.screenPadding),
+                      children: [
+                        _DebtSummary(
+                          totalDebt: totalDebt,
+                          customersCount: customers.length,
+                          overdueCount: overdueCount,
+                        ),
+                        const SizedBox(height: AppSizes.md),
+                        _CustomerControls(
+                          controller: _searchController,
+                          filter: _filter,
+                          allCount: customers.length,
+                          outstandingCount: outstandingCount,
+                          overdueCount: overdueCount,
+                          onSearchChanged: (value) =>
+                              setState(() => _query = value.trim()),
+                          onFilterChanged: (filter) =>
+                              setState(() => _filter = filter),
+                        ),
+                        if (overdueCount > 0) ...[
+                          const SizedBox(height: AppSizes.contentGap),
+                          AppStatusBanner(
+                            tone: AppStatusTone.warning,
+                            icon: Icons.schedule_rounded,
+                            title: '$overdueCount زبون متأخر أكثر من 30 يوماً',
+                            description: 'اعرضهم لتحديث الرصيد أو تسجيل دفعة.',
+                            onTap: () => setState(
+                              () => _filter = _CustomerFilter.overdue,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: AppSizes.contentGap),
+                        Text(
+                          _query.isEmpty && _filter == _CustomerFilter.all
+                              ? 'كل الزبائن'
+                              : '${filtered.length} نتيجة',
+                          style: const TextStyle(
+                            fontSize: AppSizes.textSm,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.sm),
+                        ...filtered.map(
+                          (customer) => _CustomerTile(
+                            customer: customer,
+                            onRemind: () => _sendWhatsAppReminder(customer),
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.xxl),
+                      ],
                     ),
-                  ],
-                  const SizedBox(height: AppSizes.contentGap),
-                  ...sorted.map(
-                    (customer) => _CustomerTile(
-                      customer: customer,
-                      onRemind: () => _sendWhatsAppReminder(customer),
-                    ),
-                  ),
-                  const SizedBox(height: AppSizes.xxl),
-                ],
-              ),
             );
           },
           loading: () => const AppLoadingState(label: 'جاري تحميل الزبائن'),
@@ -128,8 +234,14 @@ class CustomersScreen extends ConsumerWidget {
 
 class _DebtSummary extends StatelessWidget {
   final double totalDebt;
+  final int customersCount;
+  final int overdueCount;
 
-  const _DebtSummary({required this.totalDebt});
+  const _DebtSummary({
+    required this.totalDebt,
+    required this.customersCount,
+    required this.overdueCount,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -166,7 +278,7 @@ class _DebtSummary extends StatelessWidget {
           const SizedBox(height: AppSizes.xs),
           Text(
             hasDebt
-                ? 'إجمالي الأرصدة المستحقة من الزبائن'
+                ? '$customersCount زبائن مسجلين${overdueCount > 0 ? ' · $overdueCount متأخرين' : ''}'
                 : 'لا توجد أرصدة مستحقة حالياً',
             style: const TextStyle(
               color: AppColors.textSecondary,
@@ -179,6 +291,65 @@ class _DebtSummary extends StatelessWidget {
   }
 }
 
+class _CustomerControls extends StatelessWidget {
+  final TextEditingController controller;
+  final _CustomerFilter filter;
+  final int allCount;
+  final int outstandingCount;
+  final int overdueCount;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<_CustomerFilter> onFilterChanged;
+
+  const _CustomerControls({
+    required this.controller,
+    required this.filter,
+    required this.allCount,
+    required this.outstandingCount,
+    required this.overdueCount,
+    required this.onSearchChanged,
+    required this.onFilterChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        AppSearchField(
+          controller: controller,
+          hintText: 'ابحث باسم الزبون أو رقم الهاتف',
+          semanticLabel: 'بحث في الزبائن',
+          onChanged: onSearchChanged,
+        ),
+        const SizedBox(height: AppSizes.sm),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Wrap(
+            spacing: AppSizes.xs,
+            runSpacing: AppSizes.xs,
+            children: [
+              ChoiceChip(
+                label: Text('الكل ($allCount)'),
+                selected: filter == _CustomerFilter.all,
+                onSelected: (_) => onFilterChanged(_CustomerFilter.all),
+              ),
+              ChoiceChip(
+                label: Text('عليهم رصيد ($outstandingCount)'),
+                selected: filter == _CustomerFilter.outstanding,
+                onSelected: (_) => onFilterChanged(_CustomerFilter.outstanding),
+              ),
+              ChoiceChip(
+                label: Text('متأخرون ($overdueCount)'),
+                selected: filter == _CustomerFilter.overdue,
+                onSelected: (_) => onFilterChanged(_CustomerFilter.overdue),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _CustomerTile extends StatelessWidget {
   final Customer customer;
   final VoidCallback onRemind;
@@ -187,9 +358,8 @@ class _CustomerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final debtAccent = customer.hasDebt
-        ? AppColors.gold
-        : AppColors.textSecondary;
+    final debtAccent =
+        customer.hasDebt ? AppColors.gold : AppColors.textSecondary;
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSizes.itemGap),
@@ -231,8 +401,8 @@ class _CustomerTile extends StatelessWidget {
                 Text(
                   customer.hasDebt
                       ? (customer.daysSinceLastPayment != null
-                            ? 'آخر دفعة منذ ${customer.daysSinceLastPayment} يوم'
-                            : 'لم يسدد بعد')
+                          ? 'آخر دفعة منذ ${customer.daysSinceLastPayment} يوم'
+                          : 'لم يسدد بعد')
                       : AppStrings.noDebt,
                   style: TextStyle(
                     fontSize: AppSizes.textXs,

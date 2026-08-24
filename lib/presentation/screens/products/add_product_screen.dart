@@ -6,12 +6,12 @@ import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/validators.dart';
 import '../../../domain/entities/product.dart';
 import '../../providers/injection.dart';
 import '../../widgets/common/app_button.dart';
 
-/// شاشة إضافة منتج جديد للمخزون.
 class AddProductScreen extends ConsumerStatefulWidget {
   const AddProductScreen({super.key});
 
@@ -44,10 +44,8 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
     final code = await context.push<String>('/barcode-scanner');
     if (code == null || !mounted) return;
 
-    // تحقق من عدم وجود منتج آخر بنفس الباركود قبل الملء
-    final existing = await ref
-        .read(productRepositoryProvider)
-        .getByBarcode(code);
+    final existing =
+        await ref.read(productRepositoryProvider).getByBarcode(code);
     if (!mounted) return;
 
     if (existing != null) {
@@ -63,6 +61,10 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
 
     setState(() => _barcodeController.text = code);
   }
+
+  double? get _buyPrice => double.tryParse(_buyPriceController.text);
+
+  double? get _sellPrice => double.tryParse(_sellPriceController.text);
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -85,10 +87,11 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
       await ref.read(productRepositoryProvider).add(product);
       if (!mounted) return;
       context.pop();
-    } catch (e) {
+    } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('تعذر إضافة المنتج: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذر إضافة المنتج: $error')),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -120,21 +123,24 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
               const SizedBox(height: AppSizes.sectionGap),
               TextFormField(
                 controller: _nameController,
+                textInputAction: TextInputAction.next,
                 decoration: const InputDecoration(
                   labelText: AppStrings.productName,
+                  prefixIcon: Icon(Icons.inventory_2_outlined),
                 ),
-                validator: (v) =>
-                    Validators.required(v, fieldName: AppStrings.productName),
+                validator: (value) => Validators.required(value,
+                    fieldName: AppStrings.productName),
               ),
               const SizedBox(height: AppSizes.md),
-
               Row(
                 children: [
                   Expanded(
                     child: TextFormField(
                       controller: _barcodeController,
+                      textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(
                         labelText: AppStrings.barcode,
+                        hintText: 'اختياري',
                       ),
                     ),
                   ),
@@ -158,7 +164,6 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                   ),
                 ],
               ),
-
               const SizedBox(height: AppSizes.md),
               Row(
                 children: [
@@ -168,10 +173,13 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
+                      textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(
                         labelText: AppStrings.buyPrice,
+                        suffixText: 'ر.ي',
                       ),
                       validator: Validators.amount,
+                      onChanged: (_) => setState(() {}),
                     ),
                   ),
                   const SizedBox(width: AppSizes.sm),
@@ -181,15 +189,21 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
+                      textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(
                         labelText: AppStrings.sellPrice,
+                        suffixText: 'ر.ي',
                       ),
                       validator: Validators.amount,
+                      onChanged: (_) => setState(() {}),
                     ),
                   ),
                 ],
               ),
-
+              if (_buyPrice != null && _sellPrice != null) ...[
+                const SizedBox(height: AppSizes.md),
+                _PricePreview(buyPrice: _buyPrice!, sellPrice: _sellPrice!),
+              ],
               const SizedBox(height: AppSizes.md),
               Row(
                 children: [
@@ -197,8 +211,10 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                     child: TextFormField(
                       controller: _stockController,
                       keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(
                         labelText: AppStrings.stockQty,
+                        suffixText: 'قطعة',
                       ),
                       validator: Validators.quantity,
                     ),
@@ -208,15 +224,24 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                     child: TextFormField(
                       controller: _minStockController,
                       keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.done,
                       decoration: const InputDecoration(
                         labelText: AppStrings.minStock,
+                        suffixText: 'قطعة',
                       ),
                       validator: Validators.quantity,
                     ),
                   ),
                 ],
               ),
-
+              const SizedBox(height: AppSizes.xs),
+              const Text(
+                'سيظهر تنبيه عند انخفاض الكمية إلى حد إعادة التعبئة.',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: AppSizes.textXs,
+                ),
+              ),
               const SizedBox(height: AppSizes.sectionGap),
               AppButton(
                 label: AppStrings.save,
@@ -226,6 +251,60 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PricePreview extends StatelessWidget {
+  final double buyPrice;
+  final double sellPrice;
+
+  const _PricePreview({required this.buyPrice, required this.sellPrice});
+
+  @override
+  Widget build(BuildContext context) {
+    final difference = sellPrice - buyPrice;
+    final isProfitable = difference >= 0;
+    final color = isProfitable ? AppColors.success : AppColors.danger;
+    final margin = sellPrice == 0 ? 0 : (difference / sellPrice) * 100;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.md),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        border: Border.all(color: color.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isProfitable
+                ? Icons.trending_up_rounded
+                : Icons.trending_down_rounded,
+            color: color,
+          ),
+          const SizedBox(width: AppSizes.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isProfitable ? 'ربح متوقع للقطعة' : 'خسارة متوقعة للقطعة',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: AppSizes.textXs,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${CurrencyFormatter.format(difference.abs())} · هامش ${margin.abs().toStringAsFixed(0)}%',
+                  style: TextStyle(color: color, fontWeight: FontWeight.w800),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -9,6 +9,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../domain/entities/product.dart';
 import '../../providers/injection.dart';
 import '../../widgets/common/app_main_navigation.dart';
+import '../../widgets/common/app_search_field.dart';
 import '../../widgets/common/app_state_view.dart';
 
 final productsListProvider = FutureProvider.autoDispose<List<Product>>((
@@ -18,16 +19,48 @@ final productsListProvider = FutureProvider.autoDispose<List<Product>>((
   return ref.watch(productRepositoryProvider).getAll(userId);
 });
 
-class ProductsScreen extends ConsumerWidget {
+enum _ProductFilter { all, lowStock }
+
+class ProductsScreen extends ConsumerStatefulWidget {
   const ProductsScreen({super.key});
 
-  Future<void> _refresh(WidgetRef ref) async {
+  @override
+  ConsumerState<ProductsScreen> createState() => _ProductsScreenState();
+}
+
+class _ProductsScreenState extends ConsumerState<ProductsScreen> {
+  final _searchController = TextEditingController();
+  _ProductFilter _filter = _ProductFilter.all;
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _refresh() async {
     ref.invalidate(productsListProvider);
     await ref.read(productsListProvider.future);
   }
 
+  void _resetFilters() {
+    setState(() {
+      _searchController.clear();
+      _query = '';
+      _filter = _ProductFilter.all;
+    });
+  }
+
+  bool _matchesQuery(Product product) {
+    if (_query.isEmpty) return true;
+    final query = _query.toLowerCase();
+    return product.name.toLowerCase().contains(query) ||
+        (product.barcode?.toLowerCase().contains(query) ?? false);
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final productsAsync = ref.watch(productsListProvider);
 
     return Scaffold(
@@ -58,30 +91,99 @@ class ProductsScreen extends ConsumerWidget {
             }
 
             final lowStockCount = products.where((p) => p.isLowStock).length;
+            final filteredProducts = products
+                .where(_matchesQuery)
+                .where(
+                  (product) =>
+                      _filter != _ProductFilter.lowStock || product.isLowStock,
+                )
+                .toList();
+
             return RefreshIndicator(
               color: AppColors.primary,
-              onRefresh: () => _refresh(ref),
-              child: ListView(
-                padding: const EdgeInsets.all(AppSizes.screenPadding),
-                children: [
-                  Text(
-                    'مخزون المتجر',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: AppSizes.itemGap),
-                  if (lowStockCount > 0) ...[
-                    AppStatusBanner(
-                      tone: AppStatusTone.warning,
-                      icon: Icons.inventory_2_outlined,
-                      title: '$lowStockCount منتج بحاجة إلى إعادة تعبئة',
-                      description: 'راجع المنتجات المعلَّمة قبل نفادها.',
+              onRefresh: _refresh,
+              child: filteredProducts.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(AppSizes.screenPadding),
+                      children: [
+                        _InventoryHeader(
+                          productsCount: products.length,
+                          lowStockCount: lowStockCount,
+                        ),
+                        const SizedBox(height: AppSizes.md),
+                        _InventoryControls(
+                          controller: _searchController,
+                          query: _query,
+                          filter: _filter,
+                          allCount: products.length,
+                          lowStockCount: lowStockCount,
+                          onSearchChanged: (value) =>
+                              setState(() => _query = value.trim()),
+                          onFilterChanged: (filter) =>
+                              setState(() => _filter = filter),
+                        ),
+                        const SizedBox(height: AppSizes.xxl),
+                        AppEmptyState(
+                          icon: Icons.search_off_rounded,
+                          title: 'لا توجد نتائج مطابقة',
+                          description:
+                              'جرّب تغيير كلمة البحث أو عرض كل المنتجات.',
+                          actionLabel: 'إظهار كل المنتجات',
+                          onAction: _resetFilters,
+                        ),
+                      ],
+                    )
+                  : ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(AppSizes.screenPadding),
+                      children: [
+                        _InventoryHeader(
+                          productsCount: products.length,
+                          lowStockCount: lowStockCount,
+                        ),
+                        const SizedBox(height: AppSizes.md),
+                        _InventoryControls(
+                          controller: _searchController,
+                          query: _query,
+                          filter: _filter,
+                          allCount: products.length,
+                          lowStockCount: lowStockCount,
+                          onSearchChanged: (value) =>
+                              setState(() => _query = value.trim()),
+                          onFilterChanged: (filter) =>
+                              setState(() => _filter = filter),
+                        ),
+                        if (lowStockCount > 0) ...[
+                          const SizedBox(height: AppSizes.contentGap),
+                          AppStatusBanner(
+                            tone: AppStatusTone.warning,
+                            icon: Icons.inventory_2_outlined,
+                            title: '$lowStockCount منتج بحاجة إلى إعادة تعبئة',
+                            description: 'اعرض المنتجات المنخفضة قبل نفادها.',
+                            onTap: () => setState(
+                              () => _filter = _ProductFilter.lowStock,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: AppSizes.contentGap),
+                        Text(
+                          _query.isEmpty && _filter == _ProductFilter.all
+                              ? 'كل المنتجات'
+                              : '${filteredProducts.length} نتيجة',
+                          style: const TextStyle(
+                            fontSize: AppSizes.textSm,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.sm),
+                        ...filteredProducts.map(
+                          (product) => _ProductTile(product: product),
+                        ),
+                        const SizedBox(height: AppSizes.xxl),
+                      ],
                     ),
-                    const SizedBox(height: AppSizes.contentGap),
-                  ],
-                  ...products.map((product) => _ProductTile(product: product)),
-                  const SizedBox(height: AppSizes.xxl),
-                ],
-              ),
             );
           },
           loading: () => const AppLoadingState(label: 'جاري تحميل المنتجات'),
@@ -91,6 +193,96 @@ class ProductsScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _InventoryHeader extends StatelessWidget {
+  final int productsCount;
+  final int lowStockCount;
+
+  const _InventoryHeader({
+    required this.productsCount,
+    required this.lowStockCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('مخزون المتجر',
+                  style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 2),
+              Text(
+                '$productsCount منتجات${lowStockCount > 0 ? ' · $lowStockCount تحتاج متابعة' : ''}',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: AppSizes.textSm,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Icon(Icons.inventory_2_outlined, color: AppColors.primary),
+      ],
+    );
+  }
+}
+
+class _InventoryControls extends StatelessWidget {
+  final TextEditingController controller;
+  final String query;
+  final _ProductFilter filter;
+  final int allCount;
+  final int lowStockCount;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<_ProductFilter> onFilterChanged;
+
+  const _InventoryControls({
+    required this.controller,
+    required this.query,
+    required this.filter,
+    required this.allCount,
+    required this.lowStockCount,
+    required this.onSearchChanged,
+    required this.onFilterChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        AppSearchField(
+          controller: controller,
+          hintText: 'ابحث باسم المنتج أو الباركود',
+          semanticLabel: 'بحث في المنتجات',
+          onChanged: onSearchChanged,
+        ),
+        const SizedBox(height: AppSizes.sm),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Wrap(
+            spacing: AppSizes.xs,
+            runSpacing: AppSizes.xs,
+            children: [
+              ChoiceChip(
+                label: Text('الكل ($allCount)'),
+                selected: filter == _ProductFilter.all,
+                onSelected: (_) => onFilterChanged(_ProductFilter.all),
+              ),
+              ChoiceChip(
+                label: Text('منخفض المخزون ($lowStockCount)'),
+                selected: filter == _ProductFilter.lowStock,
+                onSelected: (_) => onFilterChanged(_ProductFilter.lowStock),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
